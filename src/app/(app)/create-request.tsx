@@ -26,6 +26,7 @@ export default function CreateAdvisorRequestScreen() {
   const [selectedAdvisorName, setSelectedAdvisorName] = useState<string>(params.name || '');
   const [saving, setSaving] = useState(false);
   const [privateMode, setPrivateMode] = useState(true);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const [form, setForm] = useState({
     request_title: 'Private Matchmaking Search',
@@ -53,6 +54,10 @@ export default function CreateAdvisorRequestScreen() {
   };
 
   const submit = async () => {
+    if (!agreedToTerms) {
+      Alert.alert('Agreement Required', 'You must read and agree to the Match Advisor terms before proceeding.');
+      return;
+    }
     if (!form.partner_preferences.trim()) {
       Alert.alert('Partner preferences needed', 'Please describe the qualities that matter most to you.');
       return;
@@ -222,6 +227,23 @@ export default function CreateAdvisorRequestScreen() {
           />
 
           <View style={{ marginTop: spacing.lg }}>
+            <View style={{ marginBottom: spacing.md, padding: spacing.md, backgroundColor: c.surfaceAlt, borderRadius: radii.md, borderWidth: 1, borderColor: c.border }}>
+              <Text variant="subhead" style={{ fontWeight: '700', marginBottom: spacing.sm }}>Matchmaking Agreement Terms:</Text>
+              <Text variant="footnote" tone="muted" style={{ marginBottom: spacing.xs }}>1. The service is a strict flat fee of £500 total.</Text>
+              <Text variant="footnote" tone="muted" style={{ marginBottom: spacing.xs }}>2. You are paying a £250 non-refundable deposit today to begin the search.</Text>
+              <Text variant="footnote" tone="muted" style={{ marginBottom: spacing.xs }}>3. The final £250 success fee is ONLY payable once the advisor finds a partner you approve of and the case is marked as completed by both parties.</Text>
+              <Text variant="footnote" tone="muted">4. You agree not to exchange payments outside of the Pakiza platform.</Text>
+              
+              <View style={{ marginTop: spacing.md, borderTopWidth: 1, borderTopColor: c.border, paddingTop: spacing.md }}>
+                <ToggleRow
+                  label="I have read and agree to the above terms"
+                  value={agreedToTerms}
+                  onValueChange={setAgreedToTerms}
+                  onDark={false}
+                />
+              </View>
+            </View>
+
             <Button
               label="Confirm & Book Advisor (£250 Deposit)"
               variant="primary"
