@@ -3,7 +3,7 @@ import { Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, TextInput,
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter, Stack } from 'expo-router';
 
 import { errorMessage } from '@/api/client';
 import { matchAdvisorsApi } from '@/api/matchAdvisors';
@@ -329,7 +329,9 @@ export default function OfferChatScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <KeyboardAvoidingView
       style={[styles.root, { backgroundColor: c.bg }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
@@ -448,6 +450,7 @@ export default function OfferChatScreen() {
         </PressableScale>
       </View>
     </KeyboardAvoidingView>
+    </>
   );
 }
 
