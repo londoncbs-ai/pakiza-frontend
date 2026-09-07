@@ -88,4 +88,7 @@ export const matchAdvisorsApi = {
   getReceivedOffers() {
     return api.get<MatchAdvisorOffer[]>('/match-advisors/offers/received').then((r) => r.data);
   },
+completeOffer(offerId: string, rating: number) {
+    return api.post<MatchAdvisorOffer>(`/match-advisors/offers/${offerId}/complete?rating=${rating}`).then((r) => r.data);
+  },
 };
