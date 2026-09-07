@@ -248,7 +248,7 @@ export default function CreateAdvisorRequestScreen() {
                     4. TIMELINES: The Advisor commits to a standard 30-day active search period. If no suitable match is found, you reserve the right to cancel the search without paying the final £250 Success Fee, though the initial deposit remains non-refundable for time spent.{"
 
 "}
-                    5. DISPUTE RESOLUTION: In the event of misconduct, ghosting, or disagreement, you may escalate the case to Pakiza Trust & Safety. Pakiza reserves the right to make the final determination on escrow disbursements.
+                    5. DISPUTE RESOLUTION & MONITORING: In the event of misconduct, ghosting, or disagreement, you may escalate the case to Pakiza Trust & Safety. Pakiza reserves the right to make the final determination on escrow disbursements. For your protection, all chat messages, profile recommendations, and events between you and the Match Advisor are permanently logged, monitored, and may be reviewed by Pakiza Administrators.
                   </Text>
                 </ScrollView>
               </View>
