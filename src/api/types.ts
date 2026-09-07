@@ -729,6 +729,7 @@ export interface MatchAdvisorOfferMessage {
   offer_id: string;
   sender_id: string;
   sender_role: 'user' | 'advisor';
+  sender_name?: string;
   type: MatchAdvisorOfferMessageType;
   content: string | null;
   proposal_details?: {

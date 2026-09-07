@@ -308,6 +308,7 @@ export default function OfferChatScreen() {
           {/* Time & status */}
           <View style={[styles.timeRow, isMe ? { justifyContent: 'flex-end' } : { justifyContent: 'flex-start' }]}>
             <Text variant="footnote" tone="subtle" style={styles.timeText}>
+              {!isMe && (item.sender_name || advisorDisplayName) ? `${item.sender_name || advisorDisplayName} • ` : ''}
               {formatTime(item.created_at)}
             </Text>
             {isMe && (
