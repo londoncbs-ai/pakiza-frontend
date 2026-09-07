@@ -227,14 +227,33 @@ export default function CreateAdvisorRequestScreen() {
           />
 
           <View style={{ marginTop: spacing.lg }}>
-            <View style={{ marginBottom: spacing.md, padding: spacing.md, backgroundColor: c.surfaceAlt, borderRadius: radii.md, borderWidth: 1, borderColor: c.border }}>
-              <Text variant="subhead" style={{ fontWeight: '700', marginBottom: spacing.sm }}>Matchmaking Agreement Terms:</Text>
-              <Text variant="footnote" tone="muted" style={{ marginBottom: spacing.xs }}>1. The service is a strict flat fee of £500 total.</Text>
-              <Text variant="footnote" tone="muted" style={{ marginBottom: spacing.xs }}>2. You are paying a £250 non-refundable deposit today to begin the search.</Text>
-              <Text variant="footnote" tone="muted" style={{ marginBottom: spacing.xs }}>3. The final £250 success fee is ONLY payable once the advisor finds a partner you approve of and the case is marked as completed by both parties.</Text>
-              <Text variant="footnote" tone="muted">4. You agree not to exchange payments outside of the Pakiza platform.</Text>
+                        <View style={{ marginBottom: spacing.md, padding: spacing.md, backgroundColor: c.surfaceAlt, borderRadius: radii.md, borderWidth: 1, borderColor: c.border }}>
+              <Text variant="subhead" style={{ fontWeight: '700', marginBottom: spacing.sm, color: c.ink }}>Matchmaking Agreement Terms</Text>
               
-              <View style={{ marginTop: spacing.md, borderTopWidth: 1, borderTopColor: c.border, paddingTop: spacing.md }}>
+              <View style={{ height: 150, backgroundColor: c.surface, borderRadius: radii.sm, padding: spacing.sm, borderWidth: 1, borderColor: c.border, marginBottom: spacing.md }}>
+                <ScrollView nestedScrollEnabled showsVerticalScrollIndicator>
+                  <Text variant="footnote" tone="muted" style={{ lineHeight: 18 }}>
+                    By engaging a Match Advisor on the Pakiza platform, you agree to the following legally binding terms:{"
+
+"}
+                    1. FEE STRUCTURE: You agree to a total flat fee of £500 for matchmaking services. A non-refundable deposit of £250 is required immediately to initiate the search.{"
+
+"}
+                    2. SUCCESS FEE: The remaining balance of £250 (the "Success Fee") is securely held in escrow. It will only be released to the Advisor if and when a mutually agreed partner is found, and BOTH you and the Advisor confirm completion of the case within the application.{"
+
+"}
+                    3. PLATFORM EXCLUSIVITY: All payments must be processed exclusively through the Pakiza platform. You agree not to solicit, offer, or accept off-platform payments or side-agreements with any Match Advisor. Violating this clause will result in an immediate and permanent ban from the Pakiza network and forfeiture of all escrowed funds.{"
+
+"}
+                    4. TIMELINES: The Advisor commits to a standard 30-day active search period. If no suitable match is found, you reserve the right to cancel the search without paying the final £250 Success Fee, though the initial deposit remains non-refundable for time spent.{"
+
+"}
+                    5. DISPUTE RESOLUTION: In the event of misconduct, ghosting, or disagreement, you may escalate the case to Pakiza Trust & Safety. Pakiza reserves the right to make the final determination on escrow disbursements.
+                  </Text>
+                </ScrollView>
+              </View>
+              
+              <View style={{ borderTopWidth: 1, borderTopColor: c.border, paddingTop: spacing.md }}>
                 <ToggleRow
                   label="I have read and agree to the above terms"
                   value={agreedToTerms}
