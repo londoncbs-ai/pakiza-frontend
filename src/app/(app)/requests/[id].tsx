@@ -48,20 +48,6 @@ export default function RequestDetailsScreen() {
     loadData();
   }, [params.id]);
 
-  const handleDelete = () => {
-    Alert.alert('Delete Request', 'Are you sure you want to permanently delete this request?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-        try {
-          await matchAdvisorsApi.deleteRequest(params.id!);
-          router.back();
-        } catch (err) {
-          Alert.alert('Error', errorMessage(err));
-        }
-      }}
-    ]);
-  };
-
   const handleCancel = () => {
     Alert.alert('Cancel Request', 'Are you sure you want to cancel this request?', [
       { text: 'No', style: 'cancel' },
@@ -129,9 +115,7 @@ export default function RequestDetailsScreen() {
           {req.status === 'open' && (
              <Button label="Cancel Request" variant="secondary" onPress={handleCancel} />
           )}
-          <PressableScale onPress={handleDelete} style={{ padding: spacing.md, alignItems: 'center', borderWidth: 1, borderColor: palette.sienna, borderRadius: radii.pill }}>
-            <Text variant="subhead" style={{ color: palette.sienna, fontWeight: '600' }}>Delete Permanently</Text>
-          </PressableScale>
+
         </View>
       </ScrollView>
     </Screen>
