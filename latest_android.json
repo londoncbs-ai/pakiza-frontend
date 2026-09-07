@@ -1,0 +1,54 @@
+[
+  {
+    "id": "b721a3de-f4c8-420a-a6da-0fd75fadc703",
+    "status": "FINISHED",
+    "platform": "ANDROID",
+    "artifacts": {
+      "buildUrl": "https://expo.dev/artifacts/eas/bipK9tlMIpJbsfNkCrodZt2DBW1ST8W5hCVN0Du8cQw.aab",
+      "applicationArchiveUrl": "https://expo.dev/artifacts/eas/bipK9tlMIpJbsfNkCrodZt2DBW1ST8W5hCVN0Du8cQw.aab"
+    },
+    "fingerprint": {
+      "id": "01a01f07-0cdc-7ea4-8037-92ed466af53d",
+      "hash": "fc1bb1e155f369144fd4e4325dfe6ef050915d54"
+    },
+    "initiatingActor": {
+      "id": "b3fc78b7-7000-4b22-94c0-09df147eccaa",
+      "displayName": "pakiza-team"
+    },
+    "logFiles": [
+      "https://storage.googleapis.com/eas-workflows-production/logs/763b2fd7-1851-4599-bd23-54d622efee6c/b721a3de-f4c8-420a-a6da-0fd75fadc703/2026-08-20T15%3A41%3A51Z-890e8c5e-5efd-4db3-9885-8cb20e255e69.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260907%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260907T150500Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=624b9875e2eebd06f4be3026b2c22c3ce990926acfa1e9213765917736aa8dacd9493782812fdfd959609828cbaaf92c2fdb816ed9cde6e2503ac95e7e200fd04d1a49c96191dd6f8a93cb258d83816e710a5e4d77a1a62168060a0c5b6eee0e53be7c3e4174bfe7e391de61a9bbdd57e554b9f0be47a884794cc0a8e2421a8af3005f54046941854cf466a130667f26db65d92a40e60d9f2ae48eceac9b05c8ca13386f6decd05e4ac72c956d090f0de4d434ac50bbdc4a1bf7b5f5a0333f1343b60cec229ef85e9a46440656eb24e0b6908050fb4fdd1bbadad484601043bd7625c60e1cb00d95d17769c934ea3b2b582b75c1c3bdb9c68eaf9fee2ad247bd"
+    ],
+    "app": {
+      "id": "763b2fd7-1851-4599-bd23-54d622efee6c",
+      "name": "pakiza-frontend",
+      "slug": "pakiza-frontend",
+      "ownerAccount": {
+        "id": "e52624fe-ca8c-4289-ae51-9974be04d854",
+        "name": "pakiza-team"
+      }
+    },
+    "distribution": "STORE",
+    "buildProfile": "production",
+    "appIdentifier": "app.pakiza.mobile",
+    "sdkVersion": "54.0.0",
+    "appVersion": "1.1.1",
+    "appBuildVersion": "17",
+    "runtime": {
+      "id": "01a0147d-d27d-76f0-969e-26f1d1de4e98",
+      "version": "1.1.1"
+    },
+    "gitCommitHash": "bfa7df9f3f07b8a84e11e33618aeb6f1de1608fd",
+    "gitCommitMessage": "Fix invisible outline buttons on light cards (Decline, Cancel meeting, Refresh)\n\nThe 'outline' button variant is cream text on a cream border - correct on the\ndark/branded screens it was built for, but invisible on light surface cards.\nAdd a theme-aware 'outlineAccent' variant (accent text + border) and use it for\nthe meeting-card Decline, the meeting Cancel, and the verify-hub Refresh, which\nsit on light cards.",
+    "priority": "NORMAL",
+    "createdAt": "2026-08-20T15:14:52.751Z",
+    "updatedAt": "2026-08-20T16:05:01.098Z",
+    "completedAt": "2026-08-20T16:05:00.862Z",
+    "expirationDate": "2026-09-19T15:14:52.801Z",
+    "isForIosSimulator": false,
+    "metrics": {
+      "buildWaitTime": 4323,
+      "buildQueueTime": 1619080,
+      "buildDuration": 1384708
+    }
+  }
+]

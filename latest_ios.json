@@ -1,0 +1,56 @@
+[
+  {
+    "id": "dabe0b73-94a1-4c0f-8704-89b951bbaafb",
+    "status": "FINISHED",
+    "platform": "IOS",
+    "artifacts": {
+      "buildUrl": "https://expo.dev/artifacts/eas/b6x_kjnaPR80E5zvjNRqwVdpr6fSJ0tIEmrpPx4nzsI.ipa",
+      "xcodeBuildLogsUrl": "https://storage.googleapis.com/eas-workflows-production/logs/763b2fd7-1851-4599-bd23-54d622efee6c/dabe0b73-94a1-4c0f-8704-89b951bbaafb/2026-08-28T14%3A20%3A25Z-dabe0b73-94a1-4c0f-8704-89b951bbaafb-xcode.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260907%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260907T150502Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=94f262c5daf356bc77a6de344f8d295e4661984a43a4f14fe4120cf318402d4a63d1097e22c1333b6625c5ff54cf59b80bc41dd36b9303842afaaf72c4d2a299159a9de4bd182e7797f3fa823187e877d17181597d77061d98e63504c62a79e6e84cde1ec758eef50debdb7d15b24651ed5b4e884b8a49f267872cc3ad48aadb4c99035223005381ecd33332e489a0c35ad1723ae7d86fabf4d3352a8eea7c08c9a49dbf399f9e8b52fd0208f17d3d9f58f6392e9bb8d07f26aed14ac39075862955d664cdff64fdbb2d11fc6790fe2df9e40df831ae1cdd0c00b8b7bc5db7fcca302802ec88a79b3078b0f5dddff954db6aa06ce7de402217bdb72302e23484",
+      "applicationArchiveUrl": "https://expo.dev/artifacts/eas/b6x_kjnaPR80E5zvjNRqwVdpr6fSJ0tIEmrpPx4nzsI.ipa"
+    },
+    "fingerprint": {
+      "id": "01a048be-36db-74ca-aceb-5c965220655b",
+      "hash": "bae140f63eacdd74c799107fc4b03a534d86b652"
+    },
+    "initiatingActor": {
+      "id": "b3fc78b7-7000-4b22-94c0-09df147eccaa",
+      "displayName": "pakiza-team"
+    },
+    "logFiles": [
+      "https://storage.googleapis.com/eas-workflows-production/logs/763b2fd7-1851-4599-bd23-54d622efee6c/dabe0b73-94a1-4c0f-8704-89b951bbaafb/2026-08-28T14%3A20%3A25Z-ca83af0c-af45-46b6-9f88-1cfafadde15b.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260907%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260907T150502Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=6c5f680110b1dbc2a8c8485fd8193fd4ebcf9f60407ed4d22d3bfdf0c9ee3757df2a58ce7ec353370d33fcccfbba7212fcf5b98065835007800dd34f52a31cc3aecc07df8612ac175c99beb9cf4d08577cce35c6a2039a3aa1906d728c6c18ce24bf12ab3a90d3ad85ca56d5676511d39e5c3ba2add26d10a325620f82228bc5995b3d5ee1a390df3a3a91127af20a5082d7566191682da803b568e57fffc52a08d760e0dd2e6f9f158798345f694355ec1c5a45380430f747fff1d4e06519eb9d79d2415c8618415e474441cbe6d08e6741a4d88056d9eb43338bc4676292eedcc0eca213b0ae64992fccf119ed6483ec70dc9db5c38bfe73229a4af5455115",
+      "https://storage.googleapis.com/eas-workflows-production/logs/763b2fd7-1851-4599-bd23-54d622efee6c/dabe0b73-94a1-4c0f-8704-89b951bbaafb/2026-08-28T14%3A20%3A25Z-dabe0b73-94a1-4c0f-8704-89b951bbaafb-xcode.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260907%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260907T150502Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=94f262c5daf356bc77a6de344f8d295e4661984a43a4f14fe4120cf318402d4a63d1097e22c1333b6625c5ff54cf59b80bc41dd36b9303842afaaf72c4d2a299159a9de4bd182e7797f3fa823187e877d17181597d77061d98e63504c62a79e6e84cde1ec758eef50debdb7d15b24651ed5b4e884b8a49f267872cc3ad48aadb4c99035223005381ecd33332e489a0c35ad1723ae7d86fabf4d3352a8eea7c08c9a49dbf399f9e8b52fd0208f17d3d9f58f6392e9bb8d07f26aed14ac39075862955d664cdff64fdbb2d11fc6790fe2df9e40df831ae1cdd0c00b8b7bc5db7fcca302802ec88a79b3078b0f5dddff954db6aa06ce7de402217bdb72302e23484"
+    ],
+    "app": {
+      "id": "763b2fd7-1851-4599-bd23-54d622efee6c",
+      "name": "pakiza-frontend",
+      "slug": "pakiza-frontend",
+      "ownerAccount": {
+        "id": "e52624fe-ca8c-4289-ae51-9974be04d854",
+        "name": "pakiza-team"
+      }
+    },
+    "distribution": "STORE",
+    "buildProfile": "production",
+    "appIdentifier": "app.pakiza.mobile",
+    "sdkVersion": "54.0.0",
+    "appVersion": "1.1.1",
+    "appBuildVersion": "4",
+    "runtime": {
+      "id": "01a0147d-d27d-76f0-969e-26f1d1de4e98",
+      "version": "1.1.1"
+    },
+    "gitCommitHash": "37f428bc3adf04736e721c36a30dd83971d4001e",
+    "gitCommitMessage": "iOS discovery: one member at a time, scroll to pass\n\nApp Review read the swipe deck as another dating app. iOS now shows one\nmember filling the screen, moved through by scrolling; Android keeps the\ndeck untouched, and src/app/(app)/discover.tsx is the only file that\nchooses between them.\n\n- Photograph takes three quarters of the page and pages horizontally\n  through the member's pictures; tap left or right to move, because a\n  nested pager cannot be relied on to win the swipe.\n- Scrolling on records a pass, drawn live against the scroll as a colour\n  wash and a word so it is never silent. Gold for interest already sent,\n  red for a pass.\n- The bar under the photograph carries the two deliberate decisions,\n  express interest and save. It opens the full profile on a tap: dragging\n  up to open and scrolling up to move on were the same gesture, and\n  getting it wrong passed the person being read.\n- Revisiting someone passed is gated to Premium, corrected once on settle\n  rather than per frame, which was feeding itself into a scroll loop.\n- Every paid surface is sold on this screen: who is interested in you\n  (Gold), the interest allowance, going back, boosts, and the shortlist.\n\nAlso: guard the Meta SDK behind an Expo Go check so it stops red-boxing\nthe whole app at startup, and restore the route to Explore and events,\nwhich iOS had lost when the old Discover header was replaced.",
+    "priority": "NORMAL",
+    "createdAt": "2026-08-28T14:20:20.527Z",
+    "updatedAt": "2026-08-28T14:27:57.299Z",
+    "completedAt": "2026-08-28T14:27:56.988Z",
+    "expirationDate": "2026-09-27T14:20:20.560Z",
+    "isForIosSimulator": false,
+    "metrics": {
+      "buildWaitTime": 3086,
+      "buildQueueTime": 22248,
+      "buildDuration": 431127
+    }
+  }
+]
