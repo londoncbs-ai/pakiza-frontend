@@ -67,4 +67,25 @@ export const matchAdvisorsApi = {
   sendOfferMessage(offerId: string, input: import('./types').MatchAdvisorOfferMessageInput) {
     return api.post<import('./types').MatchAdvisorOfferMessage>(`/match-advisors/offers/${offerId}/messages`, input).then((r) => r.data);
   },
+
+
+  updateRequest(requestId: string, input: any) {
+    return api.patch<MatchAdvisorRequest>(`/match-advisors/requests/${requestId}`, input).then((r) => r.data);
+  },
+
+  deleteRequest(requestId: string) {
+    return api.delete(`/match-advisors/requests/${requestId}`).then((r) => r.data);
+  },
+
+  updateOffer(offerId: string, input: any) {
+    return api.patch<MatchAdvisorOffer>(`/match-advisors/offers/${offerId}`, input).then((r) => r.data);
+  },
+
+  deleteOffer(offerId: string) {
+    return api.delete(`/match-advisors/offers/${offerId}`).then((r) => r.data);
+  },
+
+  getReceivedOffers() {
+    return api.get<MatchAdvisorOffer[]>('/match-advisors/offers/received').then((r) => r.data);
+  },
 };

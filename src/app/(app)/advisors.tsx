@@ -50,9 +50,6 @@ export default function MatchAdvisorsDirectoryScreen() {
     }, [loadData])
   );
 
-  const activeRequest = myRequests.find(
-    (r) => r.status === 'open' || r.status === 'accepted' || r.status === 'active'
-  );
 
   const handleBookAdvisor = (advisor: MatchAdvisorProfile) => {
     setViewingAdvisor(null);
@@ -99,39 +96,33 @@ export default function MatchAdvisorsDirectoryScreen() {
                 </Text>
               </View>
 
-              {/* Active Search Banner (if user already has one) */}
-              {activeRequest && (
-                <View style={[styles.activeCard, { backgroundColor: c.surface, borderColor: c.border }, !isDark && shadow.soft]}>
-                  <View style={{ flex: 1, marginRight: spacing.md }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.success }} />
-                      <Text variant="label" tone="accent" style={{ textTransform: 'uppercase', fontWeight: '700' }}>Active Search</Text>
-                    </View>
-                    <Text variant="subhead" tone="default" numberOfLines={1}>
-                      {activeRequest.advisor_name ? `Advisor: ${activeRequest.advisor_name}` : activeRequest.request_title}
-                    </Text>
-                    <Text variant="footnote" tone="muted" style={{ marginTop: 2 }}>
-                      £500 Flat Fee • £250 Deposit Secured
-                    </Text>
-                  </View>
-                  <Button
-                    label="Open Chat"
-                    variant="primary"
-                    onPress={() => {
-                      if (activeRequest.selected_offer_id) {
-                        router.push({
-                          pathname: '/advisor-chat/[offerId]',
-                          params: {
-                            offerId: String(activeRequest.selected_offer_id),
-                            name: activeRequest.advisor_name || '',
-                            photo: activeRequest.advisor_photo_url || '',
-                          },
-                        } as any);
-                      } else {
-                        router.push('/(app)/messages' as any);
-                      }
-                    }}
-                  />
+              {/* My Requests Section */}
+              {myRequests.length > 0 && (
+                <View style={{ marginBottom: spacing.lg }}>
+                  <Text variant="heading" tone="default" style={{ marginBottom: spacing.sm }}>My Match Requests</Text>
+                  {myRequests.map((req) => (
+                    <PressableScale
+                      key={req.id}
+                      onPress={() => router.push({ pathname: '/(app)/requests/[id]', params: { id: req.id } } as any)}
+                      style={[styles.activeCard, { backgroundColor: c.surface, borderColor: c.border, marginBottom: 12 }, !isDark && shadow.soft] as any}
+                    >
+                      <View style={{ flex: 1, marginRight: spacing.md }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: req.status === 'cancelled' ? palette.sienna : c.success }} />
+                          <Text variant="label" tone="accent" style={{ textTransform: 'uppercase', fontWeight: '700' }}>
+                            {req.status}
+                          </Text>
+                        </View>
+                        <Text variant="subhead" tone="default" numberOfLines={1}>
+                          {req.request_title || 'Private Search'}
+                        </Text>
+                        <Text variant="footnote" tone="muted" style={{ marginTop: 2 }}>
+                          {req.advisor_name ? `Advisor: ${req.advisor_name}` : 'Open to all advisors'}
+                        </Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color={c.textMuted} />
+                    </PressableScale>
+                  ))}
                 </View>
               )}
 

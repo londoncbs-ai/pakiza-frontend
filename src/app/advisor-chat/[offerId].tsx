@@ -1,5 +1,5 @@
 import { useCallback, useState, useRef } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ import { ErrorState } from '@/components/ErrorState';
 import { PressableScale } from '@/components/PressableScale';
 import { SkeletonList } from '@/components/Skeleton';
 import { Text } from '@/components/Text';
+import { Button } from '@/components/Button';
 import { useAuth } from '@/store/auth';
 import { palette, radii, shadow, spacing, useTheme } from '@/theme';
 
@@ -162,6 +163,23 @@ export default function OfferChatScreen() {
     }
   };
 
+  const handleAcceptOffer = () => {
+    Alert.alert('Accept Offer', `Are you sure you want to accept this offer for £${offer ? (offer.fee_pence / 100).toFixed(2) : '500'}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Accept & Pay Deposit', onPress: async () => {
+        try {
+          if (!offer) return;
+          await matchAdvisorsApi.acceptOffer(offer.id);
+          // Auto pay the deposit for demo purposes
+          await matchAdvisorsApi.payOffer(offer.id, Math.floor(offer.fee_pence / 2));
+          load();
+        } catch (err) {
+          Alert.alert('Error', errorMessage(err));
+        }
+      }}
+    ]);
+  };
+
   const renderMessage = ({ item }: { item: MatchAdvisorOfferMessage }) => {
     const isMe = item.sender_id === userId || item.sender_role === 'user';
 
@@ -263,6 +281,10 @@ export default function OfferChatScreen() {
                   Success balance of £250 is only payable once a spouse/partner is found and agreed.
                 </Text>
               </View>
+
+              {!isSearchActive && offer?.status === 'open' && (
+                 <Button label="Accept Offer & Pay Deposit" variant="primary" style={{ marginTop: spacing.md }} onPress={handleAcceptOffer} />
+              )}
             </View>
           </View>
         </View>
