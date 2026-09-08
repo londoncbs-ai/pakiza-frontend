@@ -161,15 +161,21 @@ export default function MatchAdvisorsDirectoryScreen() {
                   
                   {/* Rating + Experience Row */}
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                      <Ionicons name="star" size={13} color={palette.gold} />
-                      <Text variant="label" tone="default" style={{ fontWeight: '700' }}>
-                        {item.rating ? item.rating.toFixed(1) : '5.0'}
+                    {item.reviews_count > 0 ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <Ionicons name="star" size={13} color={palette.gold} />
+                        <Text variant="label" tone="default" style={{ fontWeight: '700' }}>
+                          {item.rating.toFixed(1)}
+                        </Text>
+                        <Text variant="label" tone="muted">
+                          ({item.reviews_count})
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text variant="label" tone="accent" style={{ fontWeight: '700' }}>
+                        New Advisor
                       </Text>
-                      <Text variant="label" tone="muted">
-                        ({item.reviews_count || 12})
-                      </Text>
-                    </View>
+                    )}
                     <Text variant="label" tone="muted">•</Text>
                     <Text variant="label" tone="muted">
                       {item.city || 'London, UK'}
@@ -272,13 +278,27 @@ export default function MatchAdvisorsDirectoryScreen() {
 
                 {/* Rating Badge */}
                 <View style={[styles.ratingBadge, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
-                  <Ionicons name="star" size={16} color={palette.gold} />
-                  <Text variant="subhead" tone="default" style={{ fontWeight: '800' }}>
-                    {viewingAdvisor.rating ? viewingAdvisor.rating.toFixed(1) : '5.0'}
-                  </Text>
-                  <Text variant="footnote" tone="muted">
-                    ({viewingAdvisor.reviews_count || 14} verified reviews)
-                  </Text>
+                  {viewingAdvisor.reviews_count > 0 ? (
+                    <>
+                      <Ionicons name="star" size={16} color={palette.gold} />
+                      <Text variant="subhead" tone="default" style={{ fontWeight: '800' }}>
+                        {viewingAdvisor.rating.toFixed(1)}
+                      </Text>
+                      <Text variant="footnote" tone="muted">
+                        ({viewingAdvisor.reviews_count} verified {viewingAdvisor.reviews_count === 1 ? 'review' : 'reviews'})
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <Ionicons name="shield-checkmark" size={16} color={palette.burgundy} />
+                      <Text variant="subhead" tone="accent" style={{ fontWeight: '800' }}>
+                        New Advisor
+                      </Text>
+                      <Text variant="footnote" tone="muted">
+                        (0 verified reviews)
+                      </Text>
+                    </>
+                  )}
                 </View>
               </View>
 
