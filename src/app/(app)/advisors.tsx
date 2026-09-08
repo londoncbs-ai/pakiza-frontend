@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { FlatList, Modal, ScrollView, StyleSheet, View, Pressable } from 'react-native';
+import { Alert, FlatList, Modal, ScrollView, StyleSheet, View, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -55,7 +55,23 @@ export default function MatchAdvisorsDirectoryScreen() {
     }, [loadData])
   );
 
+  const ongoingReq =
+    myRequests.find((r) => r.status === 'open' || r.status === 'accepted' || r.status === 'active') || null;
+  const activeReq = ongoingReq || myRequests[0] || null;
+  const hasActiveSearch = Boolean(ongoingReq);
+
   const handleBookAdvisor = (advisor: MatchAdvisorProfile) => {
+    if (hasActiveSearch) {
+      Alert.alert(
+        'Active Search in Progress',
+        `You currently have an active matchmaking search underway (${getSearchDisplayTitle(activeReq)}).\n\nPlatform policy allows one private search at a time so your advisor can dedicate full attention to your search. You can book a new advisor once your current search is completed.`,
+        [
+          { text: 'View Current Search', onPress: () => setActiveTab('case') },
+          { text: 'OK', style: 'cancel' },
+        ]
+      );
+      return;
+    }
     setViewingAdvisor(null);
     router.push({
       pathname: '/(app)/create-request',
@@ -65,11 +81,6 @@ export default function MatchAdvisorsDirectoryScreen() {
       },
     } as any);
   };
-
-  const activeReq =
-    myRequests.find((r) => r.status === 'open' || r.status === 'accepted' || r.status === 'active') ||
-    myRequests[0] ||
-    null;
 
   return (
     <View style={[styles.root, { backgroundColor: c.bg, paddingTop: insets.top + spacing.sm }]}>
@@ -507,6 +518,34 @@ export default function MatchAdvisorsDirectoryScreen() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <View style={{ marginBottom: spacing.lg }}>
+              {hasActiveSearch && ongoingReq && (
+                <View
+                  style={{
+                    backgroundColor: 'rgba(128, 0, 32, 0.08)',
+                    borderColor: palette.burgundy,
+                    borderWidth: 1.5,
+                    borderRadius: radii.card,
+                    padding: spacing.md,
+                    marginBottom: spacing.md,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <Ionicons name="shield-checkmark" size={18} color={palette.burgundy} />
+                    <Text variant="subhead" style={{ fontWeight: '800', color: palette.burgundy }}>
+                      Active Search Underway (1 Search Policy)
+                    </Text>
+                  </View>
+                  <Text variant="footnote" tone="default" style={{ lineHeight: 18, marginBottom: spacing.sm }}>
+                    You currently have an active search with {ongoingReq.advisor_name || 'your Match Advisor'}. Each member may run one private search at a time.
+                  </Text>
+                  <Button
+                    label="View My Active Search"
+                    variant="primary"
+                    onPress={() => setActiveTab('case')}
+                  />
+                </View>
+              )}
+
               {/* Flat Fee Transparency Banner */}
               <View style={[styles.pricingCard, { backgroundColor: palette.burgundy }]}>
                 <View style={styles.badgeRow}>
@@ -774,8 +813,8 @@ export default function MatchAdvisorsDirectoryScreen() {
                 <Text variant="subhead" tone="accent" style={{ fontWeight: '800' }}>£250 Deposit</Text>
               </View>
               <Button
-                label={`Book ${viewingAdvisor.display_name.split(' ')[0]}`}
-                variant="primary"
+                label={hasActiveSearch ? 'Case Already Active' : `Book ${viewingAdvisor.display_name.split(' ')[0]}`}
+                variant={hasActiveSearch ? 'outline' : 'primary'}
                 style={{ flex: 1, marginLeft: spacing.md }}
                 onPress={() => handleBookAdvisor(viewingAdvisor)}
               />

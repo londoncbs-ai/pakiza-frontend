@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter, Stack } from 'expo-router';
 
 import { errorMessage } from '@/api/client';
+import { inboxApi } from '@/api/inbox';
 import { profilesApi } from '@/api/profiles';
 import { ProfileDetail } from '@/components/ProfileDetail';
 import { matchAdvisorsApi, getSearchDisplayTitle } from '@/api/matchAdvisors';
@@ -201,6 +202,22 @@ export default function OfferChatScreen() {
     }
   };
 
+  const navigateToDirectChat = async (candidateName?: string) => {
+    try {
+      const items = await inboxApi.list();
+      const matchChat = items.find(
+        (i) => i.kind === 'chat' && candidateName && i.title.toLowerCase().includes(candidateName.toLowerCase())
+      ) || items.find((i) => i.kind === 'chat');
+      if (matchChat?.param_id) {
+        router.push({ pathname: '/chat/[id]', params: { id: matchChat.param_id } } as never);
+        return;
+      }
+    } catch {
+      // ignore
+    }
+    router.push('/(app)/messages' as never);
+  };
+
   const handleSend = async () => {
     const textToSend = inputText.trim();
     const targetId = resolvedOfferIdRef.current;
@@ -357,7 +374,7 @@ export default function OfferChatScreen() {
                 <Button
                   label="Open Direct Chat"
                   variant="outline"
-                  onPress={() => router.push('/(app)/(tabs)/chat' as any)}
+                  onPress={() => navigateToDirectChat(name)}
                 />
               ) : !hasAgreed ? (
                 <Button
@@ -443,7 +460,7 @@ export default function OfferChatScreen() {
               label="Open Chats"
               variant="primary"
               style={{ marginTop: spacing.sm, width: '100%' }}
-              onPress={() => router.push('/(app)/(tabs)/chat' as any)}
+              onPress={() => navigateToDirectChat(candidateName)}
             />
           </View>
         </View>

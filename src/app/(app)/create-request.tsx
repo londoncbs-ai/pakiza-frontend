@@ -5,8 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { errorMessage } from '@/api/client';
-import { matchAdvisorsApi } from '@/api/matchAdvisors';
-import type { MatchAdvisorProfile } from '@/api/types';
+import { getSearchDisplayTitle, matchAdvisorsApi } from '@/api/matchAdvisors';
+import type { MatchAdvisorProfile, MatchAdvisorRequest } from '@/api/types';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { Surface } from '@/components/Surface';
@@ -24,6 +24,7 @@ export default function CreateAdvisorRequestScreen() {
   const [advisors, setAdvisors] = useState<MatchAdvisorProfile[]>([]);
   const [selectedAdvisorId, setSelectedAdvisorId] = useState<string | null>(params.advisorId || null);
   const [selectedAdvisorName, setSelectedAdvisorName] = useState<string>(params.name || '');
+  const [activeRequest, setActiveRequest] = useState<MatchAdvisorRequest | null>(null);
   const [saving, setSaving] = useState(false);
   const [privateMode, setPrivateMode] = useState(true);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -37,16 +38,20 @@ export default function CreateAdvisorRequestScreen() {
   });
 
   useEffect(() => {
-    matchAdvisorsApi
-      .listVerifiedAdvisors()
-      .then((list) => {
-        setAdvisors(list);
-        if (!selectedAdvisorId && list.length > 0) {
-          setSelectedAdvisorId(list[0].user_id);
-          setSelectedAdvisorName(list[0].display_name);
-        }
-      })
-      .catch(() => setAdvisors([]));
+    Promise.all([
+      matchAdvisorsApi.listVerifiedAdvisors().catch(() => []),
+      matchAdvisorsApi.getMyRequests().catch(() => []),
+    ]).then(([list, myReqs]) => {
+      setAdvisors(list);
+      if (!selectedAdvisorId && list.length > 0) {
+        setSelectedAdvisorId(list[0].user_id);
+        setSelectedAdvisorName(list[0].display_name);
+      }
+      const ongoing = myReqs.find((r) => r.status === 'open' || r.status === 'accepted' || r.status === 'active');
+      if (ongoing) {
+        setActiveRequest(ongoing);
+      }
+    });
   }, []);
 
   const onChange = (key: keyof typeof form, value: string) => {
@@ -54,6 +59,17 @@ export default function CreateAdvisorRequestScreen() {
   };
 
   const submit = async () => {
+    if (activeRequest) {
+      Alert.alert(
+        'Active Search in Progress',
+        `You currently have an active matchmaking search underway (${getSearchDisplayTitle(activeRequest)}).\n\nPlatform policy allows one private search at a time so your advisor can dedicate full attention to your search. You can book a new advisor once your current search is completed.`,
+        [
+          { text: 'View Active Case', onPress: () => router.replace('/(app)/advisors' as any) },
+          { text: 'OK', style: 'cancel' },
+        ]
+      );
+      return;
+    }
     if (!agreedToTerms) {
       Alert.alert('Agreement Required', 'You must read and agree to the Match Advisor terms before proceeding.');
       return;
@@ -134,6 +150,45 @@ export default function CreateAdvisorRequestScreen() {
           <View style={{ width: 60 }} />
         </View>
 
+        {activeRequest ? (
+          <Surface elevated style={[styles.panel, { alignItems: 'center', paddingVertical: spacing.xl }]}>
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 32,
+                backgroundColor: 'rgba(128, 0, 32, 0.1)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: spacing.md,
+              }}
+            >
+              <Ionicons name="shield-checkmark" size={32} color={palette.burgundy} />
+            </View>
+            <Text variant="title" tone="accent" style={{ textAlign: 'center', marginBottom: spacing.xs }}>
+              Active Search in Progress
+            </Text>
+            <Text variant="subhead" style={{ fontWeight: '800', textAlign: 'center', marginBottom: spacing.xs }}>
+              {getSearchDisplayTitle(activeRequest)}
+            </Text>
+            <Text variant="footnote" tone="muted" style={{ textAlign: 'center', lineHeight: 22, marginBottom: spacing.lg, paddingHorizontal: spacing.md }}>
+              Each member may run one private search at a time so your Match Advisor can dedicate full attention to your search. You can book another advisor once your current search is completed.
+            </Text>
+            <Button
+              label="Go to My Active Search"
+              variant="primary"
+              style={{ width: '100%', marginBottom: spacing.sm }}
+              onPress={() => router.replace('/(app)/advisors' as any)}
+            />
+            <Button
+              label="Back to Directory"
+              variant="outline"
+              style={{ width: '100%' }}
+              onPress={() => router.back()}
+            />
+          </Surface>
+        ) : (
+          <>
         {/* Selected Advisor Callout */}
         <Surface elevated style={styles.panel}>
           <Text variant="label" tone="accent" style={{ textTransform: 'uppercase', fontWeight: '800', letterSpacing: 0.8 }}>
@@ -283,6 +338,8 @@ export default function CreateAdvisorRequestScreen() {
             </Text>
           </View>
         </Surface>
+        </>
+        )}
       </ScrollView>
     </Screen>
   );
