@@ -7,8 +7,6 @@ import { useFocusEffect, useRouter } from 'expo-router';
 
 import { errorMessage } from '@/api/client';
 import { inboxApi, type InboxItem } from '@/api/inbox';
-import { matchAdvisorsApi } from '@/api/matchAdvisors';
-import type { MatchAdvisorRequest } from '@/api/types';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { PlanBadge } from '@/components/PlanBadge';
@@ -33,12 +31,14 @@ const KIND_ICON: Record<InboxItem['kind'], keyof typeof Ionicons.glyphMap> = {
   chat: 'chatbubble',
   support: 'headset',
   meeting: 'calendar',
+  advisor: 'shield-checkmark',
 };
 
 const KIND_LABEL: Record<InboxItem['kind'], string> = {
   chat: '',
   support: 'Support',
   meeting: 'Meeting',
+  advisor: 'Advisor',
 };
 
 export default function Messages() {
@@ -47,24 +47,14 @@ export default function Messages() {
   const { c, isDark } = useTheme();
   const { revision } = useRealtime();
   const [items, setItems] = useState<InboxItem[]>([]);
-  const [activeAdvisorReq, setActiveAdvisorReq] = useState<MatchAdvisorRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [inboxRes, requestsRes] = await Promise.all([
-        inboxApi.list(),
-        matchAdvisorsApi.getMyRequests().catch(() => []),
-      ]);
+      const inboxRes = await inboxApi.list();
       setItems(inboxRes);
-      const active = requestsRes.find(
-        (r) =>
-          r.selected_offer_id &&
-          (r.status === 'open' || r.status === 'accepted' || r.status === 'active' || r.status === 'completed')
-      );
-      setActiveAdvisorReq(active || null);
       setError(null);
     } catch (err) {
       setError(errorMessage(err));
@@ -92,6 +82,17 @@ export default function Messages() {
 
   const openItem = useCallback(
     (item: InboxItem) => {
+      if (item.kind === 'advisor') {
+        router.push({
+          pathname: '/advisor-chat/[offerId]',
+          params: {
+            offerId: item.param_id || item.id,
+            name: item.title,
+            photo: item.avatar_url || '',
+          },
+        } as never);
+        return;
+      }
       router.push(
         item.param_id
           ? ({ pathname: item.route, params: { id: item.param_id } } as never)
@@ -108,98 +109,9 @@ export default function Messages() {
         <Text variant="footnote" tone="muted">Begin the conversation with purpose</Text>
       </View>
 
-      {/* Active Dedicated Advisor Banner */}
-      {activeAdvisorReq && (
-        <View style={{ paddingHorizontal: spacing.md, marginBottom: spacing.md }}>
-          <Pressable
-            style={[
-              {
-                flexDirection: 'row',
-                alignItems: 'center',
-                padding: spacing.md,
-                borderRadius: radii.card,
-                backgroundColor: c.surface,
-                borderColor: c.border,
-                borderWidth: 1,
-              },
-              !isDark && shadow.card,
-            ]}
-            onPress={() => {
-              if (activeAdvisorReq.selected_offer_id) {
-                router.push({
-                  pathname: '/advisor-chat/[offerId]',
-                  params: {
-                    offerId: String(activeAdvisorReq.selected_offer_id),
-                    name: activeAdvisorReq.advisor_name || '',
-                    photo: activeAdvisorReq.advisor_photo_url || '',
-                  },
-                } as any);
-              }
-            }}
-          >
-            {activeAdvisorReq.advisor_photo_url ? (
-              <Image
-                source={{ uri: activeAdvisorReq.advisor_photo_url }}
-                style={{ width: 46, height: 46, borderRadius: 23, marginRight: spacing.md }}
-                contentFit="cover"
-              />
-            ) : (
-              <View
-                style={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: 23,
-                  backgroundColor: palette.burgundy,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: spacing.md,
-                }}
-              >
-                <Ionicons name="shield-checkmark" size={22} color={palette.cream} />
-              </View>
-            )}
-            <View style={{ flex: 1, marginRight: spacing.sm }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text variant="subhead" tone="default" style={{ fontWeight: '700' }} numberOfLines={1}>
-                  {activeAdvisorReq.advisor_name || 'Your Match Advisor'}
-                </Text>
-                <View
-                  style={{
-                    backgroundColor: 'rgba(34, 197, 94, 0.12)',
-                    borderRadius: 6,
-                    paddingHorizontal: 6,
-                    paddingVertical: 2,
-                    marginLeft: 6,
-                  }}
-                >
-                  <Text variant="label" style={{ color: c.success, fontSize: 10, fontWeight: '700' }}>
-                    ACTIVE CASE
-                  </Text>
-                </View>
-              </View>
-              <Text variant="footnote" tone="muted" style={{ marginTop: 2 }}>
-                Private Matchmaking Search • £500 Flat Fee
-              </Text>
-            </View>
-            <View
-              style={{
-                backgroundColor: palette.burgundy,
-                borderRadius: radii.pill,
-                paddingHorizontal: 12,
-                paddingVertical: 7,
-              }}
-            >
-              <Text variant="label" style={{ color: palette.cream, fontWeight: '700' }}>
-                Chat
-              </Text>
-            </View>
-          </Pressable>
-        </View>
-      )}
-
       <View style={{ flexDirection: 'row', gap: spacing.md, paddingHorizontal: spacing.md, marginBottom: spacing.md }}>
         <Pressable
-          style={[{ flex: 1, flexDirection: 'row', alignItems: 'center', padding: spacing.sm, borderRadius: radii.xl, borderWidth: StyleSheet.hairlineWidth }, { backgroundColor: c.surface, borderColor: c.border }, !isDark && shadow.soft]}
+          style={[{ flex: 1, flexDirection: 'row', alignItems: 'center', padding: spacing.sm, borderRadius: radii.card, borderWidth: StyleSheet.hairlineWidth }, { backgroundColor: c.surface, borderColor: c.border }, !isDark && shadow.soft]}
           onPress={() => router.push('/likes')}
         >
           <View style={[{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm }, { backgroundColor: palette.burgundy }]}>
@@ -211,7 +123,7 @@ export default function Messages() {
         </Pressable>
 
         <Pressable
-          style={[{ flex: 1, flexDirection: 'row', alignItems: 'center', padding: spacing.sm, borderRadius: radii.xl, borderWidth: StyleSheet.hairlineWidth }, { backgroundColor: c.surface, borderColor: c.border }, !isDark && shadow.soft]}
+          style={[{ flex: 1, flexDirection: 'row', alignItems: 'center', padding: spacing.sm, borderRadius: radii.card, borderWidth: StyleSheet.hairlineWidth }, { backgroundColor: c.surface, borderColor: c.border }, !isDark && shadow.soft]}
           onPress={() => router.push('/(app)/matches' as any)}
         >
           <View style={[{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm }, { backgroundColor: palette.gold }]}>
@@ -244,12 +156,28 @@ export default function Messages() {
             const kindLabel = KIND_LABEL[item.kind];
             return (
               <Pressable
-                style={[styles.row, { backgroundColor: c.surface, borderColor: c.border }, !isDark && shadow.soft]}
+                style={[
+                  styles.row,
+                  { backgroundColor: c.surface, borderColor: c.border },
+                  item.kind === 'advisor' && { borderLeftWidth: 3.5, borderLeftColor: palette.burgundy },
+                  !isDark && shadow.soft,
+                ]}
                 onPress={() => openItem(item)}
               >
                 <View style={styles.avatarWrap}>
                   {item.avatar_url ? (
-                    <Image source={{ uri: item.avatar_url }} style={styles.avatar} contentFit="cover" />
+                    <Image
+                      source={{ uri: item.avatar_url }}
+                      style={[
+                        styles.avatar,
+                        item.kind === 'advisor' && { borderWidth: 1.5, borderColor: palette.burgundy },
+                      ]}
+                      contentFit="cover"
+                    />
+                  ) : item.kind === 'advisor' ? (
+                    <View style={[styles.avatar, styles.placeholder, { backgroundColor: palette.burgundy }]}>
+                      <Ionicons name="shield-checkmark" size={22} color={palette.cream} />
+                    </View>
                   ) : item.kind === 'chat' ? (
                     <View style={[styles.avatar, styles.placeholder, { backgroundColor: c.surfaceAlt }]}>
                       <Text style={styles.initial} tone="accent">{item.title[0]?.toUpperCase() ?? '?'}</Text>
@@ -266,7 +194,12 @@ export default function Messages() {
                       {item.title}
                     </Text>
                     <PlanBadge plan={item.plan} />
-                    {kindLabel ? (
+                    {item.kind === 'advisor' ? (
+                      <View style={[styles.chip, { backgroundColor: 'rgba(128, 0, 32, 0.1)', borderColor: 'rgba(128, 0, 32, 0.25)', borderWidth: 1 }]}>
+                        <Ionicons name="shield-checkmark" size={11} color={palette.burgundy} />
+                        <Text variant="label" style={{ color: palette.burgundy, fontWeight: '700', fontSize: 10 }}>ADVISOR</Text>
+                      </View>
+                    ) : kindLabel ? (
                       <View style={[styles.chip, { backgroundColor: c.accentFaint }]}>
                         <Ionicons name={KIND_ICON[item.kind]} size={11} color={c.accent} />
                         <Text variant="label" tone="accent">{kindLabel}</Text>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Alert, FlatList, ScrollView, StyleSheet, View, Pressable } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
@@ -13,7 +14,6 @@ import { Screen } from '@/components/Screen';
 import { SkeletonList } from '@/components/Skeleton';
 import { Text } from '@/components/Text';
 import { palette, radii, shadow, spacing, useTheme } from '@/theme';
-import { PressableScale } from '@/components/PressableScale';
 
 export default function RequestDetailsScreen() {
   const params = useLocalSearchParams<{ id: string }>();
@@ -33,7 +33,7 @@ export default function RequestDetailsScreen() {
       setError(null);
       const [r, o] = await Promise.all([
         matchAdvisorsApi.getRequest(params.id),
-        matchAdvisorsApi.listOffers(params.id)
+        matchAdvisorsApi.listOffers(params.id),
       ]);
       setReq(r);
       setOffers(o);
@@ -49,139 +49,486 @@ export default function RequestDetailsScreen() {
   }, [params.id]);
 
   const handleCancel = () => {
-    Alert.alert('Cancel Request', 'Are you sure you want to cancel this request?', [
-      { text: 'No', style: 'cancel' },
-      { text: 'Yes, Cancel', style: 'destructive', onPress: async () => {
-        try {
-          await matchAdvisorsApi.updateRequest(params.id!, { status: 'cancelled' });
-          loadData();
-        } catch (err) {
-          Alert.alert('Error', errorMessage(err));
-        }
-      }}
-    ]);
+    Alert.alert(
+      'Cancel Matchmaking Search',
+      'Are you sure you want to cancel this search request? Your £250 initial deposit was allocated to advisor time and is non-refundable, but you will not be charged the final £250 success fee.',
+      [
+        { text: 'Keep Search Active', style: 'cancel' },
+        {
+          text: 'Yes, Cancel Search',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await matchAdvisorsApi.updateRequest(params.id!, { status: 'cancelled' });
+              loadData();
+            } catch (err) {
+              Alert.alert('Error', errorMessage(err));
+            }
+          },
+        },
+      ]
+    );
   };
 
-  if (loading) return <Screen><SkeletonList /></Screen>;
-  if (error || !req) return <Screen><ErrorState message={error || 'Not found'} onRetry={loadData} /></Screen>;
+  if (loading) {
+    return (
+      <Screen>
+        <SkeletonList />
+      </Screen>
+    );
+  }
+
+  if (error || !req) {
+    return (
+      <Screen>
+        <ErrorState message={error || 'Case not found'} onRetry={loadData} />
+      </Screen>
+    );
+  }
+
+  const isCancelled = req.status === 'cancelled';
+  const isCompleted = req.status === 'completed';
+  const assignedOffer = offers.find((o) => o.id === req.selected_offer_id) || offers[0] || null;
+
+  // Determine active step (1: Deposit Secured, 2: Advisor Consultation, 3: Sourcing Candidates, 4: Partner Found)
+  let currentStep = 2;
+  if (isCompleted) currentStep = 4;
+  else if (isCancelled) currentStep = 1;
+  else if (assignedOffer && (assignedOffer.status === 'accepted' || assignedOffer.status === 'open')) currentStep = 3;
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ padding: spacing.md, paddingBottom: insets.bottom + 80 }}>
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={{ marginBottom: spacing.md }}>
-            <Ionicons name="chevron-back" size={28} color={c.text} style={{ marginLeft: -8 }} />
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: spacing.lg,
+          paddingTop: spacing.sm,
+          paddingBottom: insets.bottom + spacing.xxxl,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Top Header */}
+        <View style={styles.topHeader}>
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="chevron-back" size={26} color={c.text} />
           </Pressable>
-          <Text variant="title" style={{ marginTop: spacing.xs }}>{req.request_title || 'Request Details'}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: req.status === 'cancelled' ? palette.sienna : c.success }} />
-            <Text variant="label" tone="accent" style={{ textTransform: 'uppercase', fontWeight: '700' }}>{req.status}</Text>
+          <View style={styles.headerTitleWrap}>
+            <Text variant="heading" style={{ fontWeight: '800' }} numberOfLines={1}>
+              {req.request_title || 'Private Matchmaking Case'}
+            </Text>
+            <Text variant="footnote" tone="muted">
+              Case Ref: #{String(req.id).slice(0, 8).toUpperCase()}
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.statusPill,
+              {
+                backgroundColor: isCancelled
+                  ? 'rgba(194, 65, 12, 0.12)'
+                  : isCompleted
+                  ? 'rgba(217, 119, 6, 0.12)'
+                  : 'rgba(34, 197, 94, 0.12)',
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.statusDot,
+                {
+                  backgroundColor: isCancelled
+                    ? palette.sienna
+                    : isCompleted
+                    ? palette.gold
+                    : c.success,
+                },
+              ]}
+            />
+            <Text
+              variant="label"
+              style={{
+                fontSize: 11,
+                fontWeight: '800',
+                color: isCancelled
+                  ? palette.sienna
+                  : isCompleted
+                  ? palette.gold
+                  : c.success,
+                textTransform: 'uppercase',
+              }}
+            >
+              {req.status}
+            </Text>
           </View>
         </View>
 
-        <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }, !isDark ? shadow.soft : undefined] as any}>
-          <Text variant="heading" style={{ marginBottom: spacing.sm }}>Request Info</Text>
-          <Text variant="footnote" tone="muted">Budget: £{(req.max_budget_pence / 100).toFixed(2)}</Text>
-          <Text variant="footnote" tone="muted">Timeline: {req.timeline_days} days</Text>
-          <Text variant="footnote" tone="muted">Location: {req.preferred_location || 'Any'}</Text>
-          <Text variant="footnote" tone="muted" style={{ marginTop: spacing.sm }}>{req.summary}</Text>
+        {/* 4-Step Milestone Stepper */}
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: c.surface, borderColor: c.border },
+            !isDark ? shadow.soft : undefined,
+          ]}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md }}>
+            <Text variant="subhead" style={{ fontWeight: '800' }}>Search Progress</Text>
+            <Text variant="footnote" tone="muted">Standard 30-Day Representation</Text>
+          </View>
+
+          <View style={styles.stepperContainer}>
+            {/* Step 1 */}
+            <View style={styles.stepItem}>
+              <View style={[styles.stepDot, { backgroundColor: c.success }]}>
+                <Ionicons name="checkmark" size={14} color="#FFF" />
+              </View>
+              <Text variant="label" style={[styles.stepText, { color: c.text, fontWeight: '700' }]}>
+                Deposit Secured
+              </Text>
+              <Text variant="footnote" tone="muted" style={{ fontSize: 10 }}>£250 Paid</Text>
+            </View>
+
+            <View style={[styles.stepConnector, { backgroundColor: currentStep >= 2 ? c.success : c.border }]} />
+
+            {/* Step 2 */}
+            <View style={styles.stepItem}>
+              <View style={[styles.stepDot, { backgroundColor: currentStep >= 2 ? (currentStep === 2 ? palette.burgundy : c.success) : c.border }]}>
+                {currentStep > 2 ? (
+                  <Ionicons name="checkmark" size={14} color="#FFF" />
+                ) : (
+                  <Text variant="label" style={{ color: '#FFF', fontWeight: '800', fontSize: 11 }}>2</Text>
+                )}
+              </View>
+              <Text variant="label" style={[styles.stepText, { color: currentStep >= 2 ? c.text : c.textMuted, fontWeight: '700' }]}>
+                Consultation
+              </Text>
+              <Text variant="footnote" tone="muted" style={{ fontSize: 10 }}>1-on-1 Direct</Text>
+            </View>
+
+            <View style={[styles.stepConnector, { backgroundColor: currentStep >= 3 ? c.success : c.border }]} />
+
+            {/* Step 3 */}
+            <View style={styles.stepItem}>
+              <View style={[styles.stepDot, { backgroundColor: currentStep >= 3 ? (currentStep === 3 ? palette.burgundy : c.success) : c.border }]}>
+                {currentStep > 3 ? (
+                  <Ionicons name="checkmark" size={14} color="#FFF" />
+                ) : (
+                  <Text variant="label" style={{ color: '#FFF', fontWeight: '800', fontSize: 11 }}>3</Text>
+                )}
+              </View>
+              <Text variant="label" style={[styles.stepText, { color: currentStep >= 3 ? c.text : c.textMuted, fontWeight: '700' }]}>
+                Sourcing
+              </Text>
+              <Text variant="footnote" tone="muted" style={{ fontSize: 10 }}>Vetting</Text>
+            </View>
+
+            <View style={[styles.stepConnector, { backgroundColor: currentStep >= 4 ? c.success : c.border }]} />
+
+            {/* Step 4 */}
+            <View style={styles.stepItem}>
+              <View style={[styles.stepDot, { backgroundColor: currentStep >= 4 ? c.success : c.border }]}>
+                {currentStep >= 4 ? (
+                  <Ionicons name="checkmark" size={14} color="#FFF" />
+                ) : (
+                  <Text variant="label" style={{ color: '#FFF', fontWeight: '800', fontSize: 11 }}>4</Text>
+                )}
+              </View>
+              <Text variant="label" style={[styles.stepText, { color: currentStep >= 4 ? c.text : c.textMuted, fontWeight: '700' }]}>
+                Completed
+              </Text>
+              <Text variant="footnote" tone="muted" style={{ fontSize: 10 }}>£250 Balance</Text>
+            </View>
+          </View>
         </View>
 
+        {/* Assigned Match Advisor Card */}
         <View style={{ marginTop: spacing.lg }}>
-          <Text variant="heading" style={{ marginBottom: spacing.md }}>Assigned Match Advisor</Text>
-          {offers.length === 0 ? (
-            <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
-              <Text variant="subhead" style={{ fontWeight: '700', color: palette.burgundy }}>
-                Search Initialized • £250 Deposit Secured
-              </Text>
-              <Text variant="footnote" tone="muted" style={{ marginTop: 4 }}>
-                Your Match Advisor is being assigned. Flat fee of £500 total (£250 paid now, £250 payable after spouse is found).
-              </Text>
-            </View>
-          ) : (
-            offers.map(offer => (
-              <View
-                key={offer.id}
-                style={[styles.offerCard, { backgroundColor: c.surface, borderColor: c.border }, !isDark ? shadow.card : undefined] as any}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-                  <View style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 24,
-                    backgroundColor: palette.burgundy,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
-                    <Text variant="subhead" style={{ color: palette.cream, fontWeight: '800', fontSize: 18 }}>
-                      {(offer.advisor_name || 'M').charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
+          <Text variant="subhead" tone="muted" style={styles.sectionHeader}>
+            ASSIGNED MATCH ADVISOR
+          </Text>
 
-                  <View style={{ flex: 1 }}>
-                    <Text variant="subhead" style={{ fontWeight: '700', fontSize: 16 }}>
-                      {offer.advisor_name || 'Your Match Advisor'}
-                    </Text>
-                    <Text variant="footnote" style={{ color: c.success, fontWeight: '600', marginTop: 2 }}>
-                      ✓ £250 Deposit Secured • Active Search
-                    </Text>
+          {assignedOffer ? (
+            <View
+              style={[
+                styles.card,
+                { backgroundColor: c.surface, borderColor: c.border },
+                !isDark ? shadow.card : undefined,
+              ]}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                {assignedOffer.advisor_photo_url ? (
+                  <Image
+                    source={{ uri: assignedOffer.advisor_photo_url }}
+                    style={{ width: 56, height: 56, borderRadius: 28 }}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: 28,
+                      backgroundColor: palette.burgundy,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Ionicons name="shield-checkmark" size={26} color={palette.cream} />
                   </View>
+                )}
+
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text variant="subhead" style={{ fontWeight: '800', fontSize: 17 }}>
+                      {assignedOffer.advisor_name || 'Your Match Advisor'}
+                    </Text>
+                    <Ionicons name="checkmark-circle" size={18} color={c.success} />
+                  </View>
+                  <Text variant="footnote" tone="accent" style={{ marginTop: 2 }}>
+                    Private Matchmaking Representative
+                  </Text>
+                  <Text variant="footnote" tone="muted" style={{ marginTop: 2 }}>
+                    Active 1-on-1 Consultation & Candidate Search
+                  </Text>
                 </View>
+              </View>
 
-                {/* Flat Fee Representation Breakdown */}
-                <View style={{
-                  marginTop: spacing.md,
-                  padding: spacing.sm,
-                  backgroundColor: c.surfaceAlt,
-                  borderRadius: radii.sm,
-                  borderWidth: 1,
-                  borderColor: c.border,
-                }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text variant="footnote" tone="muted">Total Flat Fee</Text>
-                    <Text variant="footnote" style={{ fontWeight: '700', color: palette.burgundy }}>£500.00</Text>
-                  </View>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text variant="footnote" tone="muted">Upfront Deposit</Text>
-                    <Text variant="footnote" style={{ fontWeight: '700', color: c.success }}>£250.00 (Paid)</Text>
-                  </View>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text variant="footnote" tone="muted">Success Fee</Text>
-                    <Text variant="footnote" style={{ fontWeight: '700', color: c.text }}>£250.00 (Due on Partner Found)</Text>
-                  </View>
-                </View>
-
-                <Button
-                  label="Open Advisor Chat"
-                  variant="primary"
-                  style={{ marginTop: spacing.md }}
-                  onPress={() => router.push({
+              <Button
+                label="Open Advisor Chat"
+                variant="primary"
+                style={{ marginTop: spacing.md }}
+                onPress={() =>
+                  router.push({
                     pathname: '/advisor-chat/[offerId]',
                     params: {
-                      offerId: offer.id,
-                      name: offer.advisor_name || 'Match Advisor',
-                      photo: offer.advisor_photo_url,
+                      offerId: assignedOffer.id,
+                      name: assignedOffer.advisor_name || 'Match Advisor',
+                      photo: assignedOffer.advisor_photo_url || '',
                     },
-                  } as any)}
-                />
+                  } as any)
+                }
+              />
+            </View>
+          ) : (
+            <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
+              <Text variant="subhead" style={{ fontWeight: '700', color: palette.burgundy }}>
+                Advisor Assignment Underway
+              </Text>
+              <Text variant="footnote" tone="muted" style={{ marginTop: 4 }}>
+                Your private case has been initialized. A verified Match Advisor is being assigned to review your criteria.
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Search Criteria & Preferences Card */}
+        <View style={{ marginTop: spacing.lg }}>
+          <Text variant="subhead" tone="muted" style={styles.sectionHeader}>
+            SEARCH CRITERIA & PREFERENCES
+          </Text>
+
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: c.surface, borderColor: c.border },
+              !isDark ? shadow.soft : undefined,
+            ]}
+          >
+            <View style={styles.criteriaRow}>
+              <View style={styles.criteriaIconWrap}>
+                <Ionicons name="heart-outline" size={18} color={palette.burgundy} />
               </View>
-            ))
-          )}
+              <View style={{ flex: 1 }}>
+                <Text variant="label" tone="muted">PARTNER QUALITIES SOUGHT</Text>
+                <Text variant="body" style={{ marginTop: 3, lineHeight: 21 }}>
+                  {req.partner_preferences || 'Not specified'}
+                </Text>
+              </View>
+            </View>
+
+            {req.deal_breakers ? (
+              <View style={[styles.criteriaRow, { marginTop: spacing.md }]}>
+                <View style={styles.criteriaIconWrap}>
+                  <Ionicons name="alert-circle-outline" size={18} color={palette.sienna} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text variant="label" tone="muted">DEAL BREAKERS</Text>
+                  <Text variant="body" style={{ marginTop: 3, lineHeight: 21 }}>
+                    {req.deal_breakers}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+
+            <View style={[styles.criteriaRow, { marginTop: spacing.md }]}>
+              <View style={styles.criteriaIconWrap}>
+                <Ionicons name="location-outline" size={18} color={c.accent} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text variant="label" tone="muted">PREFERRED LOCATION</Text>
+                <Text variant="subhead" style={{ fontWeight: '700', marginTop: 2 }}>
+                  {req.preferred_location || 'Flexible / Any Location'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={[styles.criteriaRow, { marginTop: spacing.md }]}>
+              <View style={styles.criteriaIconWrap}>
+                <Ionicons name="lock-closed-outline" size={18} color={palette.gold} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text variant="label" tone="muted">PRIVACY PROTECTION</Text>
+                <Text variant="footnote" tone="default" style={{ marginTop: 2, fontWeight: '600' }}>
+                  100% Confidential Private Mode
+                </Text>
+                <Text variant="footnote" tone="muted" style={{ marginTop: 2 }}>
+                  Your profile is hidden from the public discover feed. Only candidates approved by your advisor can see you.
+                </Text>
+              </View>
+            </View>
+          </View>
         </View>
 
-        <View style={{ marginTop: spacing.xl, gap: spacing.md }}>
-          {req.status === 'open' && (
-             <Button label="Cancel Request" variant="secondary" onPress={handleCancel} />
-          )}
+        {/* Guaranteed Flat Fee Breakdown Card */}
+        <View style={{ marginTop: spacing.lg }}>
+          <Text variant="subhead" tone="muted" style={styles.sectionHeader}>
+            FEE STRUCTURE & ESCROW
+          </Text>
 
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: c.surfaceAlt, borderColor: c.border },
+              !isDark ? shadow.soft : undefined,
+            ]}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }}>
+              <Text variant="subhead" style={{ fontWeight: '700' }}>Standard Representation Fee</Text>
+              <Text variant="heading" style={{ fontWeight: '800', color: palette.burgundy }}>£500.00</Text>
+            </View>
+
+            <View style={[styles.feeRow, { borderBottomColor: c.border, borderBottomWidth: StyleSheet.hairlineWidth }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="checkmark-circle" size={16} color={c.success} />
+                <Text variant="footnote" style={{ fontWeight: '600' }}>Initial Deposit (Paid)</Text>
+              </View>
+              <Text variant="footnote" style={{ fontWeight: '800', color: c.success }}>£250.00</Text>
+            </View>
+
+            <View style={styles.feeRow}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="time-outline" size={16} color={palette.gold} />
+                <Text variant="footnote" style={{ fontWeight: '600' }}>Success Balance (Due on Partner Found)</Text>
+              </View>
+              <Text variant="footnote" style={{ fontWeight: '800', color: c.text }}>£250.00</Text>
+            </View>
+
+            <Text variant="footnote" tone="muted" style={{ marginTop: spacing.xs, lineHeight: 16 }}>
+              The final £250 balance is only charged once your advisor successfully introduces you to your confirmed partner.
+            </Text>
+          </View>
         </View>
+
+        {/* Case Actions */}
+        {!isCancelled && !isCompleted && (
+          <View style={{ marginTop: spacing.xl }}>
+            <Button
+              label="Cancel Search Request"
+              variant="outlineAccent"
+              style={{ borderColor: palette.sienna }}
+              onPress={handleCancel}
+            />
+            <Text variant="footnote" tone="muted" style={{ textAlign: 'center', marginTop: spacing.xs, fontSize: 11 }}>
+              Deposit covers initial advisor research and onboarding.
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { marginBottom: spacing.lg },
-  card: { padding: spacing.md, borderRadius: radii.card, borderWidth: 1 },
-  offerCard: { padding: spacing.md, borderRadius: radii.card, borderWidth: 1, marginBottom: spacing.sm }
+  topHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  backBtn: {
+    marginRight: spacing.sm,
+    padding: spacing.xs,
+    marginLeft: -spacing.xs,
+  },
+  headerTitleWrap: {
+    flex: 1,
+  },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radii.pill,
+    gap: 5,
+  },
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  sectionHeader: {
+    fontWeight: '800',
+    fontSize: 11,
+    letterSpacing: 0.8,
+    marginBottom: spacing.xs,
+  },
+  card: {
+    padding: spacing.md,
+    borderRadius: radii.card,
+    borderWidth: 1,
+  },
+  stepperContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.xs,
+  },
+  stepItem: {
+    alignItems: 'center',
+    width: 68,
+  },
+  stepDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  stepConnector: {
+    flex: 1,
+    height: 2,
+    marginBottom: 18,
+    marginHorizontal: 2,
+  },
+  stepText: {
+    fontSize: 10,
+    textAlign: 'center',
+  },
+  criteriaRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  criteriaIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(128, 0, 32, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  feeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
 });

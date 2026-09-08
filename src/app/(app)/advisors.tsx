@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
-import { FlatList, Image, Modal, ScrollView, StyleSheet, View } from 'react-native';
+import { FlatList, Modal, ScrollView, StyleSheet, View, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -22,6 +23,7 @@ export default function MatchAdvisorsDirectoryScreen() {
 
   const [advisors, setAdvisors] = useState<MatchAdvisorProfile[]>([]);
   const [myRequests, setMyRequests] = useState<MatchAdvisorRequest[]>([]);
+  const [activeTab, setActiveTab] = useState<'case' | 'browse'>('browse');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,6 +38,9 @@ export default function MatchAdvisorsDirectoryScreen() {
       ]);
       setAdvisors(advList);
       setMyRequests(reqList);
+      if (reqList.some((r) => r.status === 'open' || r.status === 'accepted' || r.status === 'active')) {
+        setActiveTab('case');
+      }
       setError(null);
     } catch (err) {
       setError(errorMessage(err));
@@ -50,7 +55,6 @@ export default function MatchAdvisorsDirectoryScreen() {
     }, [loadData])
   );
 
-
   const handleBookAdvisor = (advisor: MatchAdvisorProfile) => {
     setViewingAdvisor(null);
     router.push({
@@ -62,6 +66,11 @@ export default function MatchAdvisorsDirectoryScreen() {
     } as any);
   };
 
+  const activeReq =
+    myRequests.find((r) => r.status === 'open' || r.status === 'accepted' || r.status === 'active') ||
+    myRequests[0] ||
+    null;
+
   return (
     <View style={[styles.root, { backgroundColor: c.bg, paddingTop: insets.top + spacing.sm }]}>
       {/* Header */}
@@ -70,10 +79,299 @@ export default function MatchAdvisorsDirectoryScreen() {
         <Text variant="footnote" tone="muted">Personal, confidential matchmaking assistance</Text>
       </View>
 
+      {/* Segmented Controller (Visible if user has any requests) */}
+      {myRequests.length > 0 && (
+        <View style={styles.segmentBar}>
+          <Pressable
+            onPress={() => setActiveTab('case')}
+            style={[
+              styles.segmentBtn,
+              {
+                backgroundColor: activeTab === 'case' ? palette.burgundy : c.surface,
+                borderColor: activeTab === 'case' ? palette.burgundy : c.border,
+              },
+              !isDark && shadow.soft,
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              {activeReq && activeReq.status !== 'cancelled' && (
+                <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.success }} />
+              )}
+              <Text
+                variant="subhead"
+                style={{
+                  fontWeight: '700',
+                  color: activeTab === 'case' ? palette.cream : c.text,
+                }}
+              >
+                My Active Case
+              </Text>
+            </View>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setActiveTab('browse')}
+            style={[
+              styles.segmentBtn,
+              {
+                backgroundColor: activeTab === 'browse' ? palette.burgundy : c.surface,
+                borderColor: activeTab === 'browse' ? palette.burgundy : c.border,
+              },
+              !isDark && shadow.soft,
+            ]}
+          >
+            <Text
+              variant="subhead"
+              style={{
+                fontWeight: '700',
+                color: activeTab === 'browse' ? palette.cream : c.text,
+              }}
+            >
+              Browse Advisors ({advisors.length})
+            </Text>
+          </Pressable>
+        </View>
+      )}
+
       {loading ? (
         <SkeletonList />
       ) : error ? (
         <ErrorState message={error} onRetry={loadData} />
+      ) : activeTab === 'case' && activeReq ? (
+        <ScrollView
+          contentContainerStyle={{ padding: spacing.md, paddingBottom: 120 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Main Active Case Card */}
+          <View
+            style={[
+              styles.caseCard,
+              { backgroundColor: c.surface, borderColor: c.border },
+              !isDark ? shadow.card : undefined,
+            ]}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <View
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: activeReq.status === 'cancelled' ? palette.sienna : c.success,
+                  }}
+                />
+                <Text
+                  variant="label"
+                  style={{
+                    fontWeight: '800',
+                    color: activeReq.status === 'cancelled' ? palette.sienna : c.success,
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  {activeReq.status === 'cancelled' ? 'CANCELLED SEARCH' : 'ACTIVE PRIVATE SEARCH'}
+                </Text>
+              </View>
+              <Text variant="footnote" tone="muted">
+                #{String(activeReq.id).slice(0, 8).toUpperCase()}
+              </Text>
+            </View>
+
+            <Text variant="heading" style={{ fontWeight: '800', marginTop: 4, marginBottom: 2 }}>
+              {activeReq.request_title || 'Private Matchmaking Search'}
+            </Text>
+            <Text variant="footnote" tone="muted" style={{ marginBottom: spacing.md }}>
+              Confidential search handled by dedicated Match Advisor
+            </Text>
+
+            {/* Advisor Strip */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                padding: spacing.sm,
+                backgroundColor: c.surfaceAlt,
+                borderRadius: radii.md,
+                marginBottom: spacing.md,
+                borderWidth: 1,
+                borderColor: c.border,
+              }}
+            >
+              {activeReq.advisor_photo_url ? (
+                <Image
+                  source={{ uri: activeReq.advisor_photo_url }}
+                  style={{ width: 50, height: 50, borderRadius: 25, marginRight: spacing.sm }}
+                  contentFit="cover"
+                />
+              ) : (
+                <View
+                  style={{
+                    width: 50,
+                    height: 50,
+                    borderRadius: 25,
+                    backgroundColor: palette.burgundy,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: spacing.sm,
+                  }}
+                >
+                  <Ionicons name="shield-checkmark" size={24} color={palette.cream} />
+                </View>
+              )}
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Text variant="subhead" style={{ fontWeight: '700' }}>
+                    {activeReq.advisor_name || 'Assigned Match Advisor'}
+                  </Text>
+                  <Ionicons name="checkmark-circle" size={16} color={c.success} />
+                </View>
+                <Text variant="footnote" tone="accent" style={{ marginTop: 2 }}>
+                  Private Matchmaker • £250 Deposit Secured
+                </Text>
+              </View>
+            </View>
+
+            {/* Action Buttons */}
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              {activeReq.selected_offer_id ? (
+                <Button
+                  label="Message Advisor"
+                  variant="primary"
+                  style={{ flex: 1 }}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/advisor-chat/[offerId]',
+                      params: {
+                        offerId: String(activeReq.selected_offer_id),
+                        name: activeReq.advisor_name || '',
+                        photo: activeReq.advisor_photo_url || '',
+                      },
+                    } as any)
+                  }
+                />
+              ) : null}
+              <Button
+                label="Case Details"
+                variant="outline"
+                style={{ flex: 1 }}
+                onPress={() =>
+                  router.push({
+                    pathname: '/(app)/requests/[id]',
+                    params: { id: activeReq.id },
+                  } as any)
+                }
+              />
+            </View>
+          </View>
+
+          {/* Stepper Card */}
+          <View
+            style={[
+              styles.caseCard,
+              { backgroundColor: c.surface, borderColor: c.border },
+              !isDark ? shadow.soft : undefined,
+            ]}
+          >
+            <Text variant="subhead" style={{ fontWeight: '800', marginBottom: spacing.md }}>
+              Search Progress
+            </Text>
+            <View style={styles.stepperWrap}>
+              <View style={styles.stepItem}>
+                <View style={[styles.stepDot, { backgroundColor: c.success }]}>
+                  <Ionicons name="checkmark" size={13} color="#FFF" />
+                </View>
+                <Text variant="label" style={{ fontSize: 10, fontWeight: '700', textAlign: 'center' }}>Deposit</Text>
+                <Text variant="footnote" tone="muted" style={{ fontSize: 10 }}>£250 Paid</Text>
+              </View>
+              <View style={[styles.stepLine, { backgroundColor: c.success }]} />
+              <View style={styles.stepItem}>
+                <View style={[styles.stepDot, { backgroundColor: palette.burgundy }]}>
+                  <Text variant="label" style={{ color: '#FFF', fontWeight: '800', fontSize: 11 }}>2</Text>
+                </View>
+                <Text variant="label" style={{ fontSize: 10, fontWeight: '700', textAlign: 'center' }}>Consultation</Text>
+                <Text variant="footnote" tone="muted" style={{ fontSize: 10 }}>In Progress</Text>
+              </View>
+              <View style={[styles.stepLine, { backgroundColor: c.border }]} />
+              <View style={styles.stepItem}>
+                <View style={[styles.stepDot, { backgroundColor: c.border }]}>
+                  <Text variant="label" style={{ color: c.textMuted, fontWeight: '800', fontSize: 11 }}>3</Text>
+                </View>
+                <Text variant="label" tone="muted" style={{ fontSize: 10, textAlign: 'center' }}>Sourcing</Text>
+                <Text variant="footnote" tone="muted" style={{ fontSize: 10 }}>Vetting</Text>
+              </View>
+              <View style={[styles.stepLine, { backgroundColor: c.border }]} />
+              <View style={styles.stepItem}>
+                <View style={[styles.stepDot, { backgroundColor: c.border }]}>
+                  <Text variant="label" style={{ color: c.textMuted, fontWeight: '800', fontSize: 11 }}>4</Text>
+                </View>
+                <Text variant="label" tone="muted" style={{ fontSize: 10, textAlign: 'center' }}>Spouse</Text>
+                <Text variant="footnote" tone="muted" style={{ fontSize: 10 }}>£250 Due</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Criteria & Confidentiality Card */}
+          <View
+            style={[
+              styles.caseCard,
+              { backgroundColor: c.surface, borderColor: c.border },
+              !isDark ? shadow.soft : undefined,
+            ]}
+          >
+            <Text variant="subhead" style={{ fontWeight: '800', marginBottom: spacing.xs }}>
+              Preferences & Criteria
+            </Text>
+            <Text variant="footnote" tone="muted" style={{ lineHeight: 20, marginBottom: spacing.sm }}>
+              {activeReq.partner_preferences || 'Your preferences are active and handled with 100% discretion.'}
+            </Text>
+            {activeReq.preferred_location && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                <Ionicons name="location-outline" size={15} color={c.accent} />
+                <Text variant="footnote" tone="default" style={{ fontWeight: '600' }}>
+                  Target Location: {activeReq.preferred_location}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Other Searches if user has more than 1 */}
+          {myRequests.length > 1 && (
+            <View style={{ marginTop: spacing.sm, marginBottom: spacing.md }}>
+              <Text variant="subhead" tone="muted" style={{ fontWeight: '800', fontSize: 11, letterSpacing: 0.8, marginBottom: spacing.xs }}>
+                SEARCH HISTORY
+              </Text>
+              {myRequests
+                .filter((r) => r.id !== activeReq.id)
+                .map((req) => (
+                  <PressableScale
+                    key={req.id}
+                    onPress={() => router.push({ pathname: '/(app)/requests/[id]', params: { id: req.id } } as any)}
+                    style={[styles.activeCard, { backgroundColor: c.surface, borderColor: c.border, marginBottom: 8 }, !isDark && shadow.soft] as any}
+                  >
+                    <View style={{ flex: 1, marginRight: spacing.md }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                        <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: req.status === 'cancelled' ? palette.sienna : c.success }} />
+                        <Text variant="label" tone="accent" style={{ textTransform: 'uppercase', fontWeight: '700', fontSize: 10 }}>
+                          {req.status}
+                        </Text>
+                      </View>
+                      <Text variant="subhead" tone="default" numberOfLines={1}>
+                        {req.request_title || 'Private Search'}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={c.textMuted} />
+                  </PressableScale>
+                ))}
+            </View>
+          )}
+
+          {/* Browse Directory CTA */}
+          <Button
+            label="Browse All Advisors Directory"
+            variant="ghost"
+            style={{ marginTop: spacing.xs }}
+            onPress={() => setActiveTab('browse')}
+          />
+        </ScrollView>
       ) : (
         <FlatList
           data={advisors}
@@ -95,36 +393,6 @@ export default function MatchAdvisorsDirectoryScreen() {
                   Select a verified Match Advisor to lead your search. Your profile stays 100% private. The remaining £250 balance is only paid once we find your spouse.
                 </Text>
               </View>
-
-              {/* My Requests Section */}
-              {myRequests.length > 0 && (
-                <View style={{ marginBottom: spacing.lg }}>
-                  <Text variant="heading" tone="default" style={{ marginBottom: spacing.sm }}>My Match Requests</Text>
-                  {myRequests.map((req) => (
-                    <PressableScale
-                      key={req.id}
-                      onPress={() => router.push({ pathname: '/(app)/requests/[id]', params: { id: req.id } } as any)}
-                      style={[styles.activeCard, { backgroundColor: c.surface, borderColor: c.border, marginBottom: 12 }, !isDark && shadow.soft] as any}
-                    >
-                      <View style={{ flex: 1, marginRight: spacing.md }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: req.status === 'cancelled' ? palette.sienna : c.success }} />
-                          <Text variant="label" tone="accent" style={{ textTransform: 'uppercase', fontWeight: '700' }}>
-                            {req.status}
-                          </Text>
-                        </View>
-                        <Text variant="subhead" tone="default" numberOfLines={1}>
-                          {req.request_title || 'Private Search'}
-                        </Text>
-                        <Text variant="footnote" tone="muted" style={{ marginTop: 2 }}>
-                          {req.advisor_name ? `Advisor: ${req.advisor_name}` : 'Open to all advisors'}
-                        </Text>
-                      </View>
-                      <Ionicons name="chevron-forward" size={20} color={c.textMuted} />
-                    </PressableScale>
-                  ))}
-                </View>
-              )}
 
               <View style={{ marginTop: spacing.md, marginBottom: spacing.xs }}>
                 <Text variant="heading" tone="default">Verified Match Advisors</Text>
@@ -544,5 +812,49 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingBottom: spacing.xl,
     borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  segmentBar: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  segmentBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  caseCard: {
+    padding: spacing.lg,
+    borderRadius: radii.card,
+    borderWidth: 1,
+    marginBottom: spacing.md,
+  },
+  stepperWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.xs,
+  },
+  stepItem: {
+    alignItems: 'center',
+    width: 68,
+  },
+  stepDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  stepLine: {
+    flex: 1,
+    height: 2,
+    marginBottom: 16,
+    marginHorizontal: 2,
   },
 });

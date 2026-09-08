@@ -3,7 +3,7 @@ import type { SubscriptionPlan } from './types';
 
 /** A unified inbox row: a match chat, the support thread, or a meeting coordination thread. */
 export interface InboxItem {
-  kind: 'chat' | 'support' | 'meeting';
+  kind: 'chat' | 'support' | 'meeting' | 'advisor';
   id: string;
   title: string;
   /** The real last-message preview. */

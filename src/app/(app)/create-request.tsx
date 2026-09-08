@@ -228,7 +228,7 @@ export default function CreateAdvisorRequestScreen() {
 
           <View style={{ marginTop: spacing.lg }}>
                         <View style={{ marginBottom: spacing.md, padding: spacing.md, backgroundColor: c.surfaceAlt, borderRadius: radii.md, borderWidth: 1, borderColor: c.border }}>
-              <Text variant="subhead" style={{ fontWeight: '700', marginBottom: spacing.sm, color: c.ink }}>Matchmaking Agreement Terms</Text>
+              <Text variant="subhead" style={{ fontWeight: '700', marginBottom: spacing.sm, color: c.text }}>Matchmaking Agreement Terms</Text>
               
               <View style={{ height: 150, backgroundColor: c.surface, borderRadius: radii.sm, padding: spacing.sm, borderWidth: 1, borderColor: c.border, marginBottom: spacing.md }}>
                 <ScrollView nestedScrollEnabled showsVerticalScrollIndicator>
