@@ -88,25 +88,83 @@ export default function RequestDetailsScreen() {
         </View>
 
         <View style={{ marginTop: spacing.lg }}>
-          <Text variant="heading" style={{ marginBottom: spacing.md }}>Received Offers</Text>
+          <Text variant="heading" style={{ marginBottom: spacing.md }}>Assigned Match Advisor</Text>
           {offers.length === 0 ? (
-            <Text variant="footnote" tone="muted">No offers yet.</Text>
+            <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
+              <Text variant="subhead" style={{ fontWeight: '700', color: palette.burgundy }}>
+                Search Initialized • £250 Deposit Secured
+              </Text>
+              <Text variant="footnote" tone="muted" style={{ marginTop: 4 }}>
+                Your Match Advisor is being assigned. Flat fee of £500 total (£250 paid now, £250 payable after spouse is found).
+              </Text>
+            </View>
           ) : (
             offers.map(offer => (
-              <PressableScale
+              <View
                 key={offer.id}
-                onPress={() => router.push({ pathname: '/advisor-chat/[offerId]', params: { offerId: offer.id, name: offer.advisor_name, photo: offer.advisor_photo_url } } as any)}
-                style={[styles.offerCard, { backgroundColor: c.surface, borderColor: c.border }, !isDark ? shadow.soft : undefined] as any}
+                style={[styles.offerCard, { backgroundColor: c.surface, borderColor: c.border }, !isDark ? shadow.card : undefined] as any}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text variant="subhead" style={{ fontWeight: '600' }}>{offer.advisor_name || 'Match Advisor'}</Text>
-                    <Text variant="footnote" tone="muted">Fee: £{(offer.fee_pence / 100).toFixed(2)} • {offer.timeline_days} days</Text>
-                    <Text variant="label" tone="accent" style={{ marginTop: 4, fontWeight: '700' }}>STATUS: {offer.status.toUpperCase()}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                  <View style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
+                    backgroundColor: palette.burgundy,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <Text variant="subhead" style={{ color: palette.cream, fontWeight: '800', fontSize: 18 }}>
+                      {(offer.advisor_name || 'M').charAt(0).toUpperCase()}
+                    </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color={c.textMuted} />
+
+                  <View style={{ flex: 1 }}>
+                    <Text variant="subhead" style={{ fontWeight: '700', fontSize: 16 }}>
+                      {offer.advisor_name || 'Your Match Advisor'}
+                    </Text>
+                    <Text variant="footnote" style={{ color: c.success, fontWeight: '600', marginTop: 2 }}>
+                      ✓ £250 Deposit Secured • Active Search
+                    </Text>
+                  </View>
                 </View>
-              </PressableScale>
+
+                {/* Flat Fee Representation Breakdown */}
+                <View style={{
+                  marginTop: spacing.md,
+                  padding: spacing.sm,
+                  backgroundColor: c.surfaceAlt,
+                  borderRadius: radii.sm,
+                  borderWidth: 1,
+                  borderColor: c.border,
+                }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <Text variant="footnote" tone="muted">Total Flat Fee</Text>
+                    <Text variant="footnote" style={{ fontWeight: '700', color: palette.burgundy }}>£500.00</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <Text variant="footnote" tone="muted">Upfront Deposit</Text>
+                    <Text variant="footnote" style={{ fontWeight: '700', color: c.success }}>£250.00 (Paid)</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Text variant="footnote" tone="muted">Success Fee</Text>
+                    <Text variant="footnote" style={{ fontWeight: '700', color: c.text }}>£250.00 (Due on Partner Found)</Text>
+                  </View>
+                </View>
+
+                <Button
+                  label="Open Advisor Chat"
+                  variant="primary"
+                  style={{ marginTop: spacing.md }}
+                  onPress={() => router.push({
+                    pathname: '/advisor-chat/[offerId]',
+                    params: {
+                      offerId: offer.id,
+                      name: offer.advisor_name || 'Match Advisor',
+                      photo: offer.advisor_photo_url,
+                    },
+                  } as any)}
+                />
+              </View>
             ))
           )}
         </View>
