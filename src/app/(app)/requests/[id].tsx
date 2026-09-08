@@ -32,6 +32,11 @@ export default function RequestDetailsScreen() {
   const [renamingTitle, setRenamingTitle] = useState('');
   const [savingTitle, setSavingTitle] = useState(false);
 
+  // Complete search state
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [rating, setRating] = useState(5);
+  const [completing, setCompleting] = useState(false);
+
   const loadData = async () => {
     if (!params.id) return;
     try {
@@ -98,6 +103,24 @@ export default function RequestDetailsScreen() {
     }
   };
 
+  const handleCompleteSearch = async () => {
+    if (!assignedOffer) {
+      Alert.alert('Notice', 'No assigned advisor offer found to complete.');
+      return;
+    }
+    setCompleting(true);
+    try {
+      await matchAdvisorsApi.completeOffer(assignedOffer.id, rating);
+      setShowCompleteModal(false);
+      Alert.alert('Search Completed!', 'Alhamdulillah! Your search has been marked as complete. Thank you for your feedback.');
+      loadData();
+    } catch (err) {
+      Alert.alert('Error', errorMessage(err, 'Could not complete search.'));
+    } finally {
+      setCompleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <Screen>
@@ -130,7 +153,7 @@ export default function RequestDetailsScreen() {
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: spacing.lg,
-          paddingTop: spacing.sm,
+          paddingTop: insets.top + spacing.sm,
           paddingBottom: insets.bottom + spacing.xxxl,
         }}
         showsVerticalScrollIndicator={false}
@@ -507,7 +530,14 @@ export default function RequestDetailsScreen() {
 
         {/* Case Actions */}
         {!isCancelled && !isCompleted && (
-          <View style={{ marginTop: spacing.xl }}>
+          <View style={{ marginTop: spacing.xl, gap: spacing.sm }}>
+            {assignedOffer && (
+              <Button
+                label="Mark Search Completed (Partner Found)"
+                variant="primary"
+                onPress={() => setShowCompleteModal(true)}
+              />
+            )}
             <Button
               label="Cancel Search Request"
               variant="outlineAccent"
@@ -520,6 +550,93 @@ export default function RequestDetailsScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Complete Search Rating Modal */}
+      <Modal
+        visible={showCompleteModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCompleteModal(false)}
+      >
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: spacing.lg,
+          }}
+          onPress={() => setShowCompleteModal(false)}
+        >
+          <Pressable
+            style={{
+              width: '100%',
+              maxWidth: 400,
+              backgroundColor: c.surface,
+              borderRadius: radii.card,
+              padding: spacing.xl,
+              borderWidth: 1,
+              borderColor: c.border,
+            }}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={{ alignItems: 'center', marginBottom: spacing.md }}>
+              <View
+                style={{
+                  width: 50,
+                  height: 50,
+                  borderRadius: 25,
+                  backgroundColor: 'rgba(217, 119, 6, 0.12)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: spacing.sm,
+                }}
+              >
+                <Ionicons name="checkmark-done" size={28} color={palette.gold} />
+              </View>
+              <Text variant="subhead" style={{ fontWeight: '800', textAlign: 'center' }}>
+                Complete Matchmaking Search
+              </Text>
+              <Text variant="footnote" tone="muted" style={{ textAlign: 'center', marginTop: 4 }}>
+                Alhamdulillah! Confirming completion will conclude your search and record your review for{' '}
+                {assignedOffer?.advisor_name || 'your advisor'}.
+              </Text>
+            </View>
+
+            <View style={{ alignItems: 'center', marginVertical: spacing.md }}>
+              <Text variant="label" tone="muted" style={{ marginBottom: spacing.xs }}>
+                RATE YOUR ADVISOR
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Pressable key={star} onPress={() => setRating(star)}>
+                    <Ionicons
+                      name={star <= rating ? 'star' : 'star-outline'}
+                      size={32}
+                      color={star <= rating ? palette.gold : c.textMuted}
+                    />
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
+              <Button
+                label={completing ? 'Completing...' : 'Confirm & Complete Search'}
+                variant="primary"
+                onPress={handleCompleteSearch}
+                disabled={completing}
+              />
+              <Button
+                label="Cancel"
+                variant="ghost"
+                onPress={() => setShowCompleteModal(false)}
+                disabled={completing}
+              />
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Rename Search Modal */}
       <Modal

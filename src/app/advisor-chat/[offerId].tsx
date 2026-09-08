@@ -1,5 +1,5 @@
 import { useCallback, useState, useRef } from 'react';
-import { Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View, Modal } from 'react-native';
+import { Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View, Modal, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,8 +8,8 @@ import { useFocusEffect, useLocalSearchParams, useRouter, Stack } from 'expo-rou
 import { errorMessage } from '@/api/client';
 import { profilesApi } from '@/api/profiles';
 import { ProfileDetail } from '@/components/ProfileDetail';
-import { matchAdvisorsApi } from '@/api/matchAdvisors';
-import type { MatchAdvisorOffer, MatchAdvisorOfferMessage, PublicProfile } from '@/api/types';
+import { matchAdvisorsApi, getSearchDisplayTitle } from '@/api/matchAdvisors';
+import type { MatchAdvisorOffer, MatchAdvisorOfferMessage, MatchAdvisorRequest, PublicProfile } from '@/api/types';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { PressableScale } from '@/components/PressableScale';
@@ -53,12 +53,17 @@ export default function OfferChatScreen() {
   resolvedOfferIdRef.current = resolvedOfferId;
 
   const [offer, setOffer] = useState<MatchAdvisorOffer | null>(null);
+  const [req, setReq] = useState<MatchAdvisorRequest | null>(null);
   const [messages, setMessages] = useState<MatchAdvisorOfferMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [inputText, setInputText] = useState('');
   const [selectedProfile, setSelectedProfile] = useState<PublicProfile | null>(null);
+  const [showCaseModal, setShowCaseModal] = useState(false);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [rating, setRating] = useState(5);
+  const [completing, setCompleting] = useState(false);
 
   const [sending, setSending] = useState(false);
   const flatListRef = useRef<FlatList>(null);
@@ -101,7 +106,12 @@ export default function OfferChatScreen() {
         matchAdvisorsApi.getOffer(targetId).catch(() => null),
         matchAdvisorsApi.getOfferMessages(targetId),
       ]);
-      if (offerData) setOffer(offerData);
+      if (offerData) {
+        setOffer(offerData);
+        if (offerData.request_id) {
+          matchAdvisorsApi.getRequest(offerData.request_id).then(setReq).catch(() => null);
+        }
+      }
       setMessages(messagesData || []);
       setError(null);
     } catch (err) {
@@ -126,6 +136,70 @@ export default function OfferChatScreen() {
       return () => clearInterval(interval);
     }, [load])
   );
+
+  const handleAgreeToMatch = (candidateId: string, candidateName: string) => {
+    const targetId = resolvedOfferIdRef.current;
+    if (!targetId) return;
+
+    Alert.alert(
+      'Agree to Match?',
+      `Would you like your Match Advisor to officially connect you with ${candidateName}? Once connected, a direct chat will open between you.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, Connect Us',
+          onPress: async () => {
+            const content = `CLIENT_AGREED_MATCH|${candidateId}|${candidateName}`;
+            const tempId = `temp-${Date.now()}`;
+            const optimisticMsg: MatchAdvisorOfferMessage = {
+              id: tempId,
+              offer_id: targetId,
+              sender_id: userId || 'me',
+              sender_role: 'user',
+              type: 'TEXT',
+              content,
+              created_at: new Date().toISOString(),
+            };
+            setMessages((prev) => [...prev, optimisticMsg]);
+            try {
+              await matchAdvisorsApi.sendOfferMessage(targetId, {
+                type: 'TEXT',
+                content,
+              });
+              load();
+              Alert.alert(
+                'Agreement Sent!',
+                `You agreed to match with ${candidateName}. Your advisor has been notified to introduce you.`
+              );
+            } catch (err) {
+              setMessages((prev) => prev.filter((m) => m.id !== tempId));
+              Alert.alert('Error', errorMessage(err, 'Could not send agreement.'));
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleCompleteSearch = async () => {
+    const targetId = resolvedOfferIdRef.current;
+    if (!targetId) return;
+    setCompleting(true);
+    try {
+      await matchAdvisorsApi.completeOffer(targetId, rating);
+      setShowCompleteModal(false);
+      setShowCaseModal(false);
+      Alert.alert(
+        'Search Completed!',
+        'Alhamdulillah! Your matchmaking search has been marked complete. Thank you for your review.'
+      );
+      load();
+    } catch (err) {
+      Alert.alert('Error', errorMessage(err, 'Could not complete search.'));
+    } finally {
+      setCompleting(false);
+    }
+  };
 
   const handleSend = async () => {
     const textToSend = inputText.trim();
@@ -167,13 +241,17 @@ export default function OfferChatScreen() {
     }
   };
 
-
   const renderMessage = ({ item }: { item: MatchAdvisorOfferMessage }) => {
     const isMe = item.sender_id === userId || item.sender_role === 'user';
-    if (item.type === ('SYSTEM' as any) && item.content?.startsWith('PROFILE_RECOMMENDATION|')) {
+
+    // Candidate Recommendation Card
+    if (item.content?.startsWith('PROFILE_RECOMMENDATION|')) {
       const parts = item.content.split('|');
       const profileId = parts[1];
       const name = parts[2] || 'Recommended Match';
+
+      const hasAgreed = messages.some((m) => m.content?.startsWith(`CLIENT_AGREED_MATCH|${profileId}`));
+      const isMatched = messages.some((m) => m.content?.startsWith(`ADVISOR_CREATED_MATCH|${profileId}`));
 
       return (
         <View style={{ marginVertical: spacing.sm, alignItems: 'center' }}>
@@ -186,35 +264,258 @@ export default function OfferChatScreen() {
                 Alert.alert('Error', 'Could not load profile details');
               }
             }}
-            style={[{
-              backgroundColor: c.surface,
-              padding: spacing.md,
-              borderRadius: radii.card,
-              borderWidth: 1,
-              borderColor: c.border,
-              alignItems: 'center',
-              width: '80%',
-            }, !isDark ? shadow.card : {}]}
+            style={[
+              {
+                backgroundColor: c.surface,
+                padding: spacing.md,
+                borderRadius: radii.card,
+                borderWidth: 1.5,
+                borderColor: isMatched ? palette.gold : c.border,
+                alignItems: 'center',
+                width: '85%',
+              },
+              !isDark ? shadow.card : {},
+            ]}
           >
-            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.sm }}>
-              <Ionicons name="heart" size={24} color={palette.burgundy} />
-            </View>
-            <Text variant="subhead" style={{ fontWeight: '700', textAlign: 'center' }}>{name}</Text>
-            <Text variant="footnote" tone="muted" style={{ marginTop: 4, textAlign: 'center' }}>Tap to view full profile</Text>
-            <Button
-              label="View Profile"
-              variant="outline"
-              style={{ marginTop: spacing.md, width: '100%' }}
-              onPress={async () => {
-                try {
-                  const p = await profilesApi.getById(profileId);
-                  setSelectedProfile(p);
-                } catch (err) {
-                  Alert.alert('Error', 'Could not load profile details');
-                }
+            <View
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 26,
+                backgroundColor: isMatched ? 'rgba(217, 119, 6, 0.15)' : c.surfaceAlt,
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: spacing.xs,
               }}
-            />
+            >
+              <Ionicons
+                name={isMatched ? 'sparkles' : 'heart'}
+                size={26}
+                color={isMatched ? palette.gold : palette.burgundy}
+              />
+            </View>
+            <Text variant="subhead" style={{ fontWeight: '800', textAlign: 'center', fontSize: 16 }}>
+              {name}
+            </Text>
+            <Text variant="footnote" tone="muted" style={{ marginTop: 2, textAlign: 'center' }}>
+              Candidate recommended by your advisor
+            </Text>
+
+            {isMatched ? (
+              <View
+                style={{
+                  marginTop: spacing.sm,
+                  backgroundColor: 'rgba(217, 119, 6, 0.12)',
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: radii.pill,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <Ionicons name="sparkles" size={14} color={palette.gold} />
+                <Text variant="label" style={{ color: palette.burgundy, fontWeight: '800', fontSize: 11 }}>
+                  MATCH CONNECTED
+                </Text>
+              </View>
+            ) : hasAgreed ? (
+              <View
+                style={{
+                  marginTop: spacing.sm,
+                  backgroundColor: 'rgba(34, 197, 94, 0.12)',
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: radii.pill,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <Ionicons name="checkmark-circle" size={14} color={c.success} />
+                <Text variant="label" style={{ color: c.success, fontWeight: '800', fontSize: 11 }}>
+                  YOU AGREED TO MATCH
+                </Text>
+              </View>
+            ) : null}
+
+            <View style={{ marginTop: spacing.md, width: '100%', gap: spacing.xs }}>
+              <Button
+                label="View Profile"
+                variant={hasAgreed || isMatched ? 'primary' : 'outline'}
+                onPress={async () => {
+                  try {
+                    const p = await profilesApi.getById(profileId);
+                    setSelectedProfile(p);
+                  } catch (err) {
+                    Alert.alert('Error', 'Could not load profile details');
+                  }
+                }}
+              />
+
+              {isMatched ? (
+                <Button
+                  label="Open Direct Chat"
+                  variant="outline"
+                  onPress={() => router.push('/(app)/(tabs)/chat' as any)}
+                />
+              ) : !hasAgreed ? (
+                <Button
+                  label="Agree to Match"
+                  variant="primary"
+                  onPress={() => handleAgreeToMatch(profileId, name)}
+                />
+              ) : null}
+            </View>
           </PressableScale>
+        </View>
+      );
+    }
+
+    // Client Agreed Message
+    if (item.content?.startsWith('CLIENT_AGREED_MATCH|')) {
+      const parts = item.content.split('|');
+      const candidateName = parts[2] || 'candidate';
+      return (
+        <View style={{ marginVertical: spacing.xs, alignItems: 'center' }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: 'rgba(34, 197, 94, 0.1)',
+              borderColor: 'rgba(34, 197, 94, 0.3)',
+              borderWidth: 1,
+              borderRadius: radii.pill,
+              paddingHorizontal: spacing.md,
+              paddingVertical: spacing.xs,
+              gap: 6,
+            }}
+          >
+            <Ionicons name="checkmark-circle" size={16} color={c.success} />
+            <Text variant="footnote" style={{ color: c.success, fontWeight: '700' }}>
+              You agreed to connect with {candidateName}
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    // Advisor Created Match Message
+    if (item.content?.startsWith('ADVISOR_CREATED_MATCH|')) {
+      const parts = item.content.split('|');
+      const candidateName = parts[2] || 'your match';
+      return (
+        <View style={{ marginVertical: spacing.sm, alignItems: 'center' }}>
+          <View
+            style={[
+              {
+                backgroundColor: c.surface,
+                borderColor: palette.gold,
+                borderWidth: 1.5,
+                borderRadius: radii.card,
+                padding: spacing.md,
+                alignItems: 'center',
+                width: '85%',
+              },
+              !isDark ? shadow.card : {},
+            ]}
+          >
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: 'rgba(217, 119, 6, 0.15)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: spacing.xs,
+              }}
+            >
+              <Ionicons name="sparkles" size={22} color={palette.gold} />
+            </View>
+            <Text variant="subhead" style={{ fontWeight: '800', textAlign: 'center', color: palette.burgundy }}>
+              Official Match Created!
+            </Text>
+            <Text variant="footnote" tone="muted" style={{ textAlign: 'center', marginTop: 3 }}>
+              Your advisor has connected you with {candidateName}. A direct conversation is now active.
+            </Text>
+            <Button
+              label="Open Chats"
+              variant="primary"
+              style={{ marginTop: spacing.sm, width: '100%' }}
+              onPress={() => router.push('/(app)/(tabs)/chat' as any)}
+            />
+          </View>
+        </View>
+      );
+    }
+
+    // Advisor Requested Completion
+    if (item.content === 'ADVISOR_REQUESTED_COMPLETION') {
+      const isAlreadyCompleted = offer?.status === 'completed';
+      return (
+        <View style={{ marginVertical: spacing.sm, alignItems: 'center' }}>
+          <View
+            style={[
+              {
+                backgroundColor: c.surface,
+                borderColor: palette.burgundy,
+                borderWidth: 1.5,
+                borderRadius: radii.card,
+                padding: spacing.md,
+                alignItems: 'center',
+                width: '85%',
+              },
+              !isDark ? shadow.card : {},
+            ]}
+          >
+            <Ionicons name="ribbon-outline" size={30} color={palette.burgundy} style={{ marginBottom: spacing.xs }} />
+            <Text variant="subhead" style={{ fontWeight: '800', textAlign: 'center' }}>
+              Completion Requested
+            </Text>
+            <Text variant="footnote" tone="muted" style={{ textAlign: 'center', marginTop: 3 }}>
+              Your Match Advisor has requested to conclude this search. Have you found a suitable match?
+            </Text>
+            {!isAlreadyCompleted && (
+              <Button
+                label="Confirm & Conclude Search"
+                variant="primary"
+                style={{ marginTop: spacing.sm, width: '100%' }}
+                onPress={() => setShowCompleteModal(true)}
+              />
+            )}
+          </View>
+        </View>
+      );
+    }
+
+    // User or Advisor Confirmed Completion
+    if (
+      item.content === 'USER_CONFIRMED_COMPLETION' ||
+      item.content === 'ADVISOR_CONFIRMED_COMPLETION' ||
+      item.content === 'ADMIN_CONFIRMED_COMPLETION'
+    ) {
+      return (
+        <View style={{ marginVertical: spacing.sm, alignItems: 'center' }}>
+          <View
+            style={{
+              backgroundColor: 'rgba(34, 197, 94, 0.1)',
+              borderColor: 'rgba(34, 197, 94, 0.3)',
+              borderWidth: 1.5,
+              borderRadius: radii.card,
+              padding: spacing.md,
+              alignItems: 'center',
+              width: '85%',
+            }}
+          >
+            <Ionicons name="checkmark-done-circle" size={32} color={c.success} style={{ marginBottom: 4 }} />
+            <Text variant="subhead" style={{ fontWeight: '800', textAlign: 'center', color: c.success }}>
+              Search Completed
+            </Text>
+            <Text variant="footnote" tone="muted" style={{ textAlign: 'center', marginTop: 2 }}>
+              Alhamdulillah! Matchmaking search has concluded successfully.
+            </Text>
+          </View>
         </View>
       );
     }
@@ -429,6 +730,17 @@ export default function OfferChatScreen() {
             Verified
           </Text>
         </View>
+
+        {/* Case Info / Manage Button */}
+        <PressableScale
+          onPress={() => setShowCaseModal(true)}
+          style={[styles.headerBadge, { backgroundColor: c.accentFaint, marginLeft: 6 }]}
+        >
+          <Ionicons name="clipboard-outline" size={13} color={palette.burgundy} style={{ marginRight: 3 }} />
+          <Text variant="label" style={{ color: palette.burgundy, fontWeight: '700', fontSize: 11 }}>
+            Manage
+          </Text>
+        </PressableScale>
       </View>
 
       {/* Main Chat Body */}
@@ -510,6 +822,201 @@ export default function OfferChatScreen() {
             onClose={() => setSelectedProfile(null)}
           />
         )}
+      </Modal>
+
+      {/* Case Details & Management Sheet Modal */}
+      <Modal
+        visible={showCaseModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCaseModal(false)}
+      >
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'flex-end',
+          }}
+          onPress={() => setShowCaseModal(false)}
+        >
+          <Pressable
+            style={{
+              backgroundColor: c.surface,
+              borderTopLeftRadius: radii.card,
+              borderTopRightRadius: radii.card,
+              padding: spacing.lg,
+              paddingBottom: Math.max(insets.bottom, spacing.lg),
+              maxHeight: '85%',
+            }}
+            onPress={(e: any) => e.stopPropagation()}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md }}>
+              <View style={{ flex: 1, paddingRight: spacing.sm }}>
+                <Text variant="subhead" style={{ fontWeight: '800' }} numberOfLines={1}>
+                  {req ? getSearchDisplayTitle(req) : 'Matchmaking Case'}
+                </Text>
+                <Text variant="footnote" tone="muted">
+                  Case Ref: #{String(offer?.request_id || offer?.id || '').slice(0, 8).toUpperCase()}
+                </Text>
+              </View>
+              <PressableScale onPress={() => setShowCaseModal(false)}>
+                <Ionicons name="close" size={24} color={c.text} />
+              </PressableScale>
+            </View>
+
+            {req?.partner_preferences ? (
+              <View style={{ marginBottom: spacing.md, backgroundColor: c.surfaceAlt, padding: spacing.md, borderRadius: radii.md }}>
+                <Text variant="label" tone="muted" style={{ fontSize: 10 }}>PARTNER PREFERENCES</Text>
+                <Text variant="body" style={{ marginTop: 2, fontSize: 13, lineHeight: 18 }}>
+                  {req.partner_preferences}
+                </Text>
+              </View>
+            ) : null}
+
+            {req?.preferred_location ? (
+              <View style={{ marginBottom: spacing.md, backgroundColor: c.surfaceAlt, padding: spacing.md, borderRadius: radii.md }}>
+                <Text variant="label" tone="muted" style={{ fontSize: 10 }}>PREFERRED LOCATION</Text>
+                <Text variant="subhead" style={{ marginTop: 2, fontWeight: '700', fontSize: 13 }}>
+                  {req.preferred_location}
+                </Text>
+              </View>
+            ) : null}
+
+            <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>
+              <View style={{ flex: 1, backgroundColor: c.surfaceAlt, padding: spacing.sm, borderRadius: radii.sm, alignItems: 'center' }}>
+                <Text variant="label" tone="muted" style={{ fontSize: 9 }}>STATUS</Text>
+                <Text variant="subhead" style={{ fontWeight: '800', color: offer?.status === 'completed' ? c.success : palette.burgundy, fontSize: 12, marginTop: 2 }}>
+                  {offer?.status === 'completed' ? 'COMPLETED' : 'ACTIVE SEARCH'}
+                </Text>
+              </View>
+              <View style={{ flex: 1, backgroundColor: c.surfaceAlt, padding: spacing.sm, borderRadius: radii.sm, alignItems: 'center' }}>
+                <Text variant="label" tone="muted" style={{ fontSize: 9 }}>DEPOSIT</Text>
+                <Text variant="subhead" style={{ fontWeight: '800', color: c.success, fontSize: 12, marginTop: 2 }}>
+                  £250 Secured
+                </Text>
+              </View>
+              <View style={{ flex: 1, backgroundColor: c.surfaceAlt, padding: spacing.sm, borderRadius: radii.sm, alignItems: 'center' }}>
+                <Text variant="label" tone="muted" style={{ fontSize: 9 }}>SUCCESS FEE</Text>
+                <Text variant="subhead" style={{ fontWeight: '800', color: c.text, fontSize: 12, marginTop: 2 }}>
+                  £250 Due
+                </Text>
+              </View>
+            </View>
+
+            <View style={{ gap: spacing.sm }}>
+              {offer?.status !== 'completed' && (
+                <Button
+                  label="Search Completed (Partner Found)"
+                  variant="primary"
+                  onPress={() => {
+                    setShowCaseModal(false);
+                    setShowCompleteModal(true);
+                  }}
+                />
+              )}
+
+              {offer?.request_id && (
+                <Button
+                  label="View Full Case Hub & Criteria"
+                  variant="outline"
+                  onPress={() => {
+                    setShowCaseModal(false);
+                    router.push({
+                      pathname: '/requests/[id]',
+                      params: { id: offer.request_id },
+                    } as any);
+                  }}
+                />
+              )}
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Complete Search Rating Modal */}
+      <Modal
+        visible={showCompleteModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCompleteModal(false)}
+      >
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: spacing.lg,
+          }}
+          onPress={() => setShowCompleteModal(false)}
+        >
+          <Pressable
+            style={{
+              width: '100%',
+              maxWidth: 400,
+              backgroundColor: c.surface,
+              borderRadius: radii.card,
+              padding: spacing.xl,
+              borderWidth: 1,
+              borderColor: c.border,
+            }}
+            onPress={(e: any) => e.stopPropagation()}
+          >
+            <View style={{ alignItems: 'center', marginBottom: spacing.md }}>
+              <View
+                style={{
+                  width: 50,
+                  height: 50,
+                  borderRadius: 25,
+                  backgroundColor: 'rgba(217, 119, 6, 0.12)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: spacing.sm,
+                }}
+              >
+                <Ionicons name="checkmark-done" size={28} color={palette.gold} />
+              </View>
+              <Text variant="subhead" style={{ fontWeight: '800', textAlign: 'center' }}>
+                Complete Matchmaking Search
+              </Text>
+              <Text variant="footnote" tone="muted" style={{ textAlign: 'center', marginTop: 4 }}>
+                Alhamdulillah! Confirming completion will conclude your search and record your review for {advisorDisplayName}.
+              </Text>
+            </View>
+
+            <View style={{ alignItems: 'center', marginVertical: spacing.md }}>
+              <Text variant="label" tone="muted" style={{ marginBottom: spacing.xs }}>
+                RATE YOUR ADVISOR
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Pressable key={star} onPress={() => setRating(star)}>
+                    <Ionicons
+                      name={star <= rating ? 'star' : 'star-outline'}
+                      size={32}
+                      color={star <= rating ? palette.gold : c.textMuted}
+                    />
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
+              <Button
+                label={completing ? 'Completing...' : 'Confirm & Complete Search'}
+                variant="primary"
+                onPress={handleCompleteSearch}
+                disabled={completing}
+              />
+              <Button
+                label="Cancel"
+                variant="ghost"
+                onPress={() => setShowCompleteModal(false)}
+                disabled={completing}
+              />
+            </View>
+          </Pressable>
+        </Pressable>
       </Modal>
 
     </KeyboardAvoidingView>
