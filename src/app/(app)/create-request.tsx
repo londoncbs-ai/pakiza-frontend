@@ -13,6 +13,7 @@ import { Surface } from '@/components/Surface';
 import { Text } from '@/components/Text';
 import { TextField } from '@/components/TextField';
 import { ToggleRow } from '@/components/ToggleRow';
+import { presentStripePayment } from '@/lib/stripeSheet';
 import { palette, radii, shadow, spacing, useTheme } from '@/theme';
 
 export default function CreateAdvisorRequestScreen() {
@@ -99,9 +100,31 @@ export default function CreateAdvisorRequestScreen() {
         find_for_me_enabled: true,
       });
 
+      // Initiate Stripe payment for the £250 deposit
+      try {
+        const session = await matchAdvisorsApi.checkoutDeposit(created.id);
+        const paymentIntentId = await presentStripePayment(session);
+        await matchAdvisorsApi.confirmDeposit(created.id, paymentIntentId);
+      } catch (payErr: any) {
+        if (payErr?.name === 'PaymentCancelledError') {
+          Alert.alert(
+            'Deposit Pending',
+            'Your matchmaking request was created, but the £250 deposit has not yet been paid. You can complete payment at any time from your Case Hub.',
+            [
+              {
+                text: 'View Case',
+                onPress: () => router.replace('/(app)/advisors' as any),
+              },
+            ]
+          );
+          return;
+        }
+        console.warn('Deposit payment error:', payErr);
+      }
+
       Alert.alert(
-        'Advisor Booked',
-        `Your request has been sent to ${selectedAdvisorName || 'your Match Advisor'}. Your £250 deposit is secured, and your profile is now in private search mode.`,
+        'Advisor Booked & Deposit Secured',
+        `Your request has been sent to ${selectedAdvisorName || 'your Match Advisor'}. Your £250 deposit is confirmed, and your profile is now in private search mode.`,
         [
           {
             text: 'Open Advisor Chat',
@@ -120,7 +143,7 @@ export default function CreateAdvisorRequestScreen() {
             },
           },
           {
-            text: 'View Advisors',
+            text: 'View Case',
             style: 'cancel',
             onPress: () => router.replace('/(app)/advisors' as any),
           },

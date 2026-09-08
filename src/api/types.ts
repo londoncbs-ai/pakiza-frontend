@@ -90,6 +90,10 @@ export interface MatchAdvisorRequest {
   max_budget_pence: number;
   deposit_paid_pence?: number;
   final_fee_pence?: number;
+  deposit_paid?: boolean;
+  final_paid?: boolean;
+  deposit_paid_at?: string | null;
+  final_paid_at?: string | null;
   status: 'open' | 'reviewing' | 'offered' | 'accepted' | 'active' | 'completed' | 'cancelled' | 'expired';
   selected_offer_id: string | null;
   platform_fee_pct: number;

@@ -40,6 +40,22 @@ export const matchAdvisorsApi = {
     return api.get<MatchAdvisorRequest>(`/match-advisors/requests/${requestId}`).then((r) => r.data);
   },
 
+  checkoutDeposit(requestId: string) {
+    return api.post<import('@/lib/stripeSheet').StripeCheckoutSession>(`/match-advisors/requests/${requestId}/deposit-checkout`).then((r) => r.data);
+  },
+
+  confirmDeposit(requestId: string, paymentIntentId?: string | null) {
+    return api.post<MatchAdvisorRequest>(`/match-advisors/requests/${requestId}/deposit-confirm`, { payment_intent_id: paymentIntentId }).then((r) => r.data);
+  },
+
+  checkoutFinal(requestId: string) {
+    return api.post<import('@/lib/stripeSheet').StripeCheckoutSession>(`/match-advisors/requests/${requestId}/final-checkout`).then((r) => r.data);
+  },
+
+  confirmFinal(requestId: string, paymentIntentId?: string | null) {
+    return api.post<MatchAdvisorRequest>(`/match-advisors/requests/${requestId}/final-confirm`, { payment_intent_id: paymentIntentId }).then((r) => r.data);
+  },
+
   listOffers(requestId: string) {
     return api.get<MatchAdvisorOffer[]>(`/match-advisors/requests/${requestId}/offers`).then((r) => r.data);
   },

@@ -14,6 +14,7 @@ import { Screen } from '@/components/Screen';
 import { SkeletonList } from '@/components/Skeleton';
 import { Text } from '@/components/Text';
 import { TextField } from '@/components/TextField';
+import { presentStripePayment } from '@/lib/stripeSheet';
 import { palette, radii, shadow, spacing, useTheme } from '@/theme';
 
 export default function RequestDetailsScreen() {
@@ -36,6 +37,10 @@ export default function RequestDetailsScreen() {
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [rating, setRating] = useState(5);
   const [completing, setCompleting] = useState(false);
+
+  // Stripe payments state
+  const [payingDeposit, setPayingDeposit] = useState(false);
+  const [payingFinal, setPayingFinal] = useState(false);
 
   const loadData = async () => {
     if (!params.id) return;
@@ -100,6 +105,40 @@ export default function RequestDetailsScreen() {
       Alert.alert('Error', errorMessage(err, 'Could not update title'));
     } finally {
       setSavingTitle(false);
+    }
+  };
+
+  const handlePayDeposit = async () => {
+    if (!req) return;
+    setPayingDeposit(true);
+    try {
+      const session = await matchAdvisorsApi.checkoutDeposit(req.id);
+      const paymentIntentId = await presentStripePayment(session);
+      const updated = await matchAdvisorsApi.confirmDeposit(req.id, paymentIntentId);
+      setReq(updated);
+      Alert.alert('Deposit Confirmed', 'Alhamdulillah! Your £250 deposit has been secured. Your Match Advisor will proceed with your search.');
+    } catch (err: any) {
+      if (err?.name === 'PaymentCancelledError') return;
+      Alert.alert('Payment Error', errorMessage(err, 'Could not complete deposit payment.'));
+    } finally {
+      setPayingDeposit(false);
+    }
+  };
+
+  const handlePayFinal = async () => {
+    if (!req) return;
+    setPayingFinal(true);
+    try {
+      const session = await matchAdvisorsApi.checkoutFinal(req.id);
+      const paymentIntentId = await presentStripePayment(session);
+      const updated = await matchAdvisorsApi.confirmFinal(req.id, paymentIntentId);
+      setReq(updated);
+      Alert.alert('Payment Complete', 'Thank you! The final £250 success fee has been confirmed to conclude your case.');
+    } catch (err: any) {
+      if (err?.name === 'PaymentCancelledError') return;
+      Alert.alert('Payment Error', errorMessage(err, 'Could not complete final payment.'));
+    } finally {
+      setPayingFinal(false);
     }
   };
 
@@ -508,23 +547,45 @@ export default function RequestDetailsScreen() {
 
             <View style={[styles.feeRow, { borderBottomColor: c.border, borderBottomWidth: StyleSheet.hairlineWidth }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons name="checkmark-circle" size={16} color={c.success} />
-                <Text variant="footnote" style={{ fontWeight: '600' }}>Initial Deposit (Paid)</Text>
+                <Ionicons name={req?.deposit_paid ? "checkmark-circle" : "time-outline"} size={16} color={req?.deposit_paid ? c.success : palette.burgundy} />
+                <Text variant="footnote" style={{ fontWeight: '600' }}>Initial Deposit {req?.deposit_paid ? '(Paid)' : '(Unpaid)'}</Text>
               </View>
-              <Text variant="footnote" style={{ fontWeight: '800', color: c.success }}>£250.00</Text>
+              <Text variant="footnote" style={{ fontWeight: '800', color: req?.deposit_paid ? c.success : palette.burgundy }}>£250.00</Text>
             </View>
 
             <View style={styles.feeRow}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons name="time-outline" size={16} color={palette.gold} />
-                <Text variant="footnote" style={{ fontWeight: '600' }}>Success Balance (Due on Partner Found)</Text>
+                <Ionicons name={req?.final_paid ? "checkmark-circle" : "time-outline"} size={16} color={req?.final_paid ? c.success : palette.gold} />
+                <Text variant="footnote" style={{ fontWeight: '600' }}>Success Balance {req?.final_paid ? '(Paid)' : '(Due on Partner Found)'}</Text>
               </View>
-              <Text variant="footnote" style={{ fontWeight: '800', color: c.text }}>£250.00</Text>
+              <Text variant="footnote" style={{ fontWeight: '800', color: req?.final_paid ? c.success : c.text }}>£250.00</Text>
             </View>
 
             <Text variant="footnote" tone="muted" style={{ marginTop: spacing.xs, lineHeight: 16 }}>
               The final £250 balance is only charged once your advisor successfully introduces you to your confirmed partner.
             </Text>
+
+            {req && !req.deposit_paid && !isCancelled && (
+              <View style={{ marginTop: spacing.md }}>
+                <Button
+                  label="Pay £250 Initial Deposit via Card"
+                  variant="primary"
+                  loading={payingDeposit}
+                  onPress={handlePayDeposit}
+                />
+              </View>
+            )}
+
+            {req && isCompleted && !req.final_paid && (
+              <View style={{ marginTop: spacing.md }}>
+                <Button
+                  label="Pay £250 Success Balance via Card"
+                  variant="primary"
+                  loading={payingFinal}
+                  onPress={handlePayFinal}
+                />
+              </View>
+            )}
           </View>
         </View>
 
