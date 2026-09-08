@@ -153,7 +153,7 @@ export function AcceptMeetingSheet({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { ...StyleSheet.absoluteFillObject },
+  backdrop: { ...(StyleSheet.absoluteFill as any) },
   kav: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
     maxHeight: '88%',

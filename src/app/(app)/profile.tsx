@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
   photoTile: { width: 104, height: 132, borderRadius: 12, overflow: 'hidden' },
   photoImg: { width: '100%', height: '100%' },
   uploadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...(StyleSheet.absoluteFill as any),
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(20,16,17,0.45)',

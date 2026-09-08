@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     backgroundColor: hexA(palette.cream, 0.03),
   },
   scanLine: { position: 'absolute', left: 8, right: 8, height: 3, borderRadius: 2 },
-  analyzing: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: hexA(palette.burgundyDeep, 0.4) },
+  analyzing: { ...(StyleSheet.absoluteFill as any), alignItems: 'center', justifyContent: 'center', backgroundColor: hexA(palette.burgundyDeep, 0.4) },
   successBadge: {
     width: 84, height: 84, borderRadius: 42,
     backgroundColor: palette.gold,

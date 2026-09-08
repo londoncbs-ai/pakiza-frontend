@@ -30,6 +30,7 @@ export default function Onboarding() {
           <Button
             label="I already have an account"
             variant="outline"
+            onDark
             onPress={() => router.push('/(auth)/sign-in')}
           />
         </View>

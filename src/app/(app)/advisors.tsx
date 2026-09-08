@@ -86,90 +86,122 @@ export default function MatchAdvisorsDirectoryScreen() {
     <View style={[styles.root, { backgroundColor: c.bg, paddingTop: insets.top + spacing.sm }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text variant="title" tone="accent">Match Advisors</Text>
-        <Text variant="footnote" tone="muted">Personal, confidential matchmaking assistance</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text variant="title" tone="accent">Find for Me</Text>
+          <View
+            style={{
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              borderRadius: radii.pill,
+              backgroundColor: hasActiveSearch ? 'rgba(34, 197, 94, 0.12)' : 'rgba(128, 0, 32, 0.08)',
+              borderWidth: 1,
+              borderColor: hasActiveSearch ? 'rgba(34, 197, 94, 0.3)' : 'rgba(128, 0, 32, 0.2)',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 5,
+            }}
+          >
+            <View
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: 3,
+                backgroundColor: hasActiveSearch ? '#16a34a' : palette.burgundy,
+              }}
+            />
+            <Text
+              variant="label"
+              style={{
+                fontSize: 10,
+                fontWeight: '800',
+                color: hasActiveSearch ? '#16a34a' : palette.burgundy,
+                letterSpacing: 0.4,
+              }}
+            >
+              {hasActiveSearch ? '1 ACTIVE SEARCH' : '1 SEARCH POLICY'}
+            </Text>
+          </View>
+        </View>
+        <Text variant="footnote" tone="muted">Personal matchmaking • Dedicated 1-on-1 advisor</Text>
       </View>
 
-      {/* Segmented Controller (Visible if user has any requests) */}
-      {myRequests.length > 0 && (
-        <View style={styles.segmentBar}>
-          <Pressable
-            onPress={() => setActiveTab('case')}
-            style={[
-              styles.segmentBtn,
-              {
-                backgroundColor: activeTab === 'case' ? palette.burgundy : c.surface,
-                borderColor: activeTab === 'case' ? palette.burgundy : c.border,
-              },
-              !isDark && shadow.soft,
-            ]}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              {activeReq && (
-                <View
-                  style={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: 4,
-                    backgroundColor: getSearchStatusConfig(activeReq.status).color,
-                  }}
-                />
-              )}
-              <Text
-                variant="subhead"
+      {/* Segmented Controller (Always Visible) */}
+      <View style={styles.segmentBar}>
+        <Pressable
+          onPress={() => setActiveTab('case')}
+          style={[
+            styles.segmentBtn,
+            {
+              backgroundColor: activeTab === 'case' ? palette.burgundy : c.surfaceAlt,
+              borderColor: activeTab === 'case' ? palette.burgundy : c.borderStrong,
+            },
+            !isDark && shadow.soft,
+          ]}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            {activeReq && (
+              <View
                 style={{
-                  fontWeight: '700',
-                  color: activeTab === 'case' ? palette.cream : c.text,
+                  width: 7,
+                  height: 7,
+                  borderRadius: 4,
+                  backgroundColor: getSearchStatusConfig(activeReq.status).color,
                 }}
-              >
-                {activeReq && (activeReq.status === 'cancelled' || activeReq.status === 'completed' || activeReq.status === 'expired')
-                  ? 'My Case'
-                  : 'My Active Search'}
-              </Text>
-            </View>
-          </Pressable>
-
-          <Pressable
-            onPress={() => setActiveTab('browse')}
-            style={[
-              styles.segmentBtn,
-              {
-                backgroundColor: activeTab === 'browse' ? palette.burgundy : c.surface,
-                borderColor: activeTab === 'browse' ? palette.burgundy : c.border,
-              },
-              !isDark && shadow.soft,
-            ]}
-          >
+              />
+            )}
             <Text
               variant="subhead"
               style={{
-                fontWeight: '700',
-                color: activeTab === 'browse' ? palette.cream : c.text,
+                fontWeight: '800',
+                color: activeTab === 'case' ? palette.cream : c.text,
               }}
             >
-              Browse Advisors ({advisors.length})
+              {hasActiveSearch ? 'My Active Search' : myRequests.length > 0 ? 'My Case' : 'How It Works'}
             </Text>
-          </Pressable>
-        </View>
-      )}
+          </View>
+        </Pressable>
+
+        <Pressable
+          onPress={() => setActiveTab('browse')}
+          style={[
+            styles.segmentBtn,
+            {
+              backgroundColor: activeTab === 'browse' ? palette.burgundy : c.surfaceAlt,
+              borderColor: activeTab === 'browse' ? palette.burgundy : c.borderStrong,
+            },
+            !isDark && shadow.soft,
+          ]}
+        >
+          <Text
+            variant="subhead"
+            style={{
+              fontWeight: '800',
+              color: activeTab === 'browse' ? palette.cream : c.text,
+            }}
+          >
+            Advisors ({advisors.length})
+          </Text>
+        </Pressable>
+      </View>
 
       {loading ? (
         <SkeletonList />
       ) : error ? (
         <ErrorState message={error} onRetry={loadData} />
-      ) : activeTab === 'case' && activeReq ? (
-        <ScrollView
-          contentContainerStyle={{ padding: spacing.md, paddingBottom: 120 }}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Main Active Case Card */}
-          <View
-            style={[
-              styles.caseCard,
-              { backgroundColor: c.surface, borderColor: c.border },
-              !isDark ? shadow.card : undefined,
-            ]}
+      ) : activeTab === 'case' ? (
+        activeReq ? (
+          <ScrollView
+            contentContainerStyle={{ padding: spacing.md, paddingBottom: 120 }}
+            showsVerticalScrollIndicator={false}
           >
+            {/* Main Active Case Card */}
+            <View
+              style={[
+                styles.caseCard,
+                { backgroundColor: c.surface, borderColor: c.border },
+                !isDark ? shadow.card : undefined,
+              ]}
+            >
             {(() => {
               const statusCfg = getSearchStatusConfig(activeReq.status);
               const isClosedOrCancelled =
@@ -505,160 +537,231 @@ export default function MatchAdvisorsDirectoryScreen() {
           {/* Browse Directory CTA */}
           <Button
             label="Browse All Advisors Directory"
-            variant="ghost"
-            style={{ marginTop: spacing.xs }}
+            variant="outline"
+            style={{ marginTop: spacing.sm }}
             onPress={() => setActiveTab('browse')}
           />
         </ScrollView>
       ) : (
-        <FlatList
-          data={advisors}
-          keyExtractor={(a) => a.id}
-          contentContainerStyle={{ padding: spacing.md, paddingBottom: 110 }}
+        <ScrollView
+          contentContainerStyle={{ padding: spacing.md, paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            <View style={{ marginBottom: spacing.lg }}>
-              {hasActiveSearch && ongoingReq && (
-                <View
-                  style={{
-                    backgroundColor: 'rgba(128, 0, 32, 0.08)',
-                    borderColor: palette.burgundy,
-                    borderWidth: 1.5,
-                    borderRadius: radii.card,
-                    padding: spacing.md,
-                    marginBottom: spacing.md,
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                    <Ionicons name="shield-checkmark" size={18} color={palette.burgundy} />
-                    <Text variant="subhead" style={{ fontWeight: '800', color: palette.burgundy }}>
-                      Active Search Underway (1 Search Policy)
-                    </Text>
-                  </View>
-                  <Text variant="footnote" tone="default" style={{ lineHeight: 18, marginBottom: spacing.sm }}>
-                    You currently have an active search with {ongoingReq.advisor_name || 'your Match Advisor'}. Each member may run one private search at a time.
-                  </Text>
-                  <Button
-                    label="View My Active Search"
-                    variant="primary"
-                    onPress={() => setActiveTab('case')}
-                  />
-                </View>
-              )}
-
-              {/* Flat Fee Transparency Banner */}
-              <View style={[styles.pricingCard, { backgroundColor: palette.burgundy }]}>
-                <View style={styles.badgeRow}>
-                  <View style={styles.pill}>
-                    <Text variant="label" style={styles.pillText}>STANDARD PRICING</Text>
-                  </View>
-                  <Text variant="callout" style={styles.pricingFigure}>£500 Flat Fee</Text>
-                </View>
-                <Text variant="heading" style={styles.pricingTitle}>£250 deposit upfront • £250 on success</Text>
-                <Text variant="footnote" style={styles.pricingBody}>
-                  Select a verified Match Advisor to lead your search. Your profile stays 100% private. The remaining £250 balance is only paid once we find your spouse.
+        >
+          <View
+            style={[
+              styles.caseCard,
+              { backgroundColor: c.surface, borderColor: c.border },
+              !isDark ? shadow.card : undefined,
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.xs }}>
+              <View
+                style={{
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  borderRadius: radii.pill,
+                  backgroundColor: 'rgba(128, 0, 32, 0.1)',
+                }}
+              >
+                <Text variant="label" style={{ color: palette.burgundy, fontWeight: '800', fontSize: 11 }}>
+                  ONE SEARCH AT A TIME POLICY
                 </Text>
-              </View>
-
-              <View style={{ marginTop: spacing.md, marginBottom: spacing.xs }}>
-                <Text variant="heading" tone="default">Verified Match Advisors</Text>
-                <Text variant="footnote" tone="muted">Tap an advisor to view their full credentials, bio, and ratings</Text>
               </View>
             </View>
-          }
-          renderItem={({ item }) => (
-            <PressableScale
-              onPress={() => setViewingAdvisor(item)}
-              style={[styles.advisorCard, { backgroundColor: c.surface, borderColor: c.border }, !isDark ? shadow.soft : null] as any}
-            >
-              <View style={styles.advisorTopRow}>
-                <View style={styles.avatarWrap}>
-                  {item.profile_photo_url ? (
-                    <Image source={{ uri: item.profile_photo_url }} style={styles.avatarImg} />
-                  ) : (
-                    <View style={[styles.avatarPlaceholder, { backgroundColor: palette.burgundy }]}>
-                      <Text variant="heading" style={{ color: palette.cream }}>
-                        {item.display_name.charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                  )}
-                </View>
 
-                <View style={{ flex: 1, marginLeft: spacing.md }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text variant="subhead" tone="default" style={{ fontWeight: '700' }}>{item.display_name}</Text>
-                    <Ionicons name="checkmark-circle" size={16} color={c.success} />
-                  </View>
-                  <Text variant="footnote" tone="accent" numberOfLines={1} style={{ marginTop: 2 }}>
-                    {item.headline || 'Private Matchmaking Specialist'}
+            <Text variant="title" tone="accent" style={{ marginTop: spacing.xs, marginBottom: 4 }}>
+              Private Matchmaking Hub
+            </Text>
+            <Text variant="footnote" tone="muted" style={{ lineHeight: 20, marginBottom: spacing.md }}>
+              Find for Me pairs you with 1 dedicated, verified Match Advisor. To maintain complete discretion and dedicated individual attention, you run one confidential search at a time until your spouse is found.
+            </Text>
+
+            <View style={{ gap: spacing.sm, marginBottom: spacing.lg }}>
+              <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', padding: spacing.sm, backgroundColor: c.surfaceAlt, borderRadius: radii.md }}>
+                <Ionicons name="person" size={22} color={palette.burgundy} />
+                <View style={{ flex: 1 }}>
+                  <Text variant="subhead" style={{ fontWeight: '700' }}>Dedicated Individual Search</Text>
+                  <Text variant="footnote" tone="muted">Your advisor dedicates focus to your criteria with zero competing requests.</Text>
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', padding: spacing.sm, backgroundColor: c.surfaceAlt, borderRadius: radii.md }}>
+                <Ionicons name="eye-off" size={22} color={palette.burgundy} />
+                <View style={{ flex: 1 }}>
+                  <Text variant="subhead" style={{ fontWeight: '700' }}>100% Private & Hidden</Text>
+                  <Text variant="footnote" tone="muted">Your profile is hidden from the public feed while your advisor actively searches.</Text>
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', padding: spacing.sm, backgroundColor: c.surfaceAlt, borderRadius: radii.md }}>
+                <Ionicons name="shield-checkmark" size={22} color={palette.burgundy} />
+                <View style={{ flex: 1 }}>
+                  <Text variant="subhead" style={{ fontWeight: '700' }}>Standard Flat £500 Fee</Text>
+                  <Text variant="footnote" tone="muted">£250 deposit to begin • £250 success fee only after your spouse is found.</Text>
+                </View>
+              </View>
+            </View>
+
+            <Button
+              label="Choose Advisor & Start Search"
+              variant="primary"
+              onPress={() => setActiveTab('browse')}
+            />
+          </View>
+        </ScrollView>
+      )
+    ) : (
+      <FlatList
+        data={advisors}
+        keyExtractor={(a) => a.id}
+        contentContainerStyle={{ padding: spacing.md, paddingBottom: 110 }}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <View style={{ marginBottom: spacing.lg }}>
+            {hasActiveSearch && ongoingReq ? (
+              <View
+                style={{
+                  backgroundColor: 'rgba(128, 0, 32, 0.08)',
+                  borderColor: palette.burgundy,
+                  borderWidth: 1.5,
+                  borderRadius: radii.card,
+                  padding: spacing.md,
+                  marginBottom: spacing.md,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <Ionicons name="shield-checkmark" size={18} color={palette.burgundy} />
+                  <Text variant="subhead" style={{ fontWeight: '800', color: palette.burgundy }}>
+                    Active Search Underway (1 Search Policy)
                   </Text>
-                  
-                  {/* Rating + Experience Row */}
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                    {item.reviews_count > 0 ? (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                        <Ionicons name="star" size={13} color={palette.gold} />
-                        <Text variant="label" tone="default" style={{ fontWeight: '700' }}>
-                          {item.rating.toFixed(1)}
-                        </Text>
-                        <Text variant="label" tone="muted">
-                          ({item.reviews_count})
-                        </Text>
-                      </View>
-                    ) : (
-                      <Text variant="label" tone="accent" style={{ fontWeight: '700' }}>
-                        New Advisor
-                      </Text>
-                    )}
-                    <Text variant="label" tone="muted">•</Text>
-                    <Text variant="label" tone="muted">
-                      {item.city || 'London, UK'}
-                    </Text>
-                    <Text variant="label" tone="muted">•</Text>
-                    <Text variant="label" tone="muted">
-                      {item.years_experience || 5}y exp
+                </View>
+                <Text variant="footnote" tone="default" style={{ lineHeight: 18, marginBottom: spacing.sm }}>
+                  You currently have an active search with {ongoingReq.advisor_name || 'your Match Advisor'}. Each member may run one private search at a time.
+                </Text>
+                <Button
+                  label="View My Active Search"
+                  variant="primary"
+                  onPress={() => setActiveTab('case')}
+                />
+              </View>
+            ) : (
+              <View
+                style={{
+                  backgroundColor: 'rgba(128, 0, 32, 0.05)',
+                  borderColor: 'rgba(128, 0, 32, 0.2)',
+                  borderWidth: 1.5,
+                  borderRadius: radii.card,
+                  padding: spacing.md,
+                  marginBottom: spacing.md,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <Ionicons name="sparkles" size={18} color={palette.burgundy} />
+                  <Text variant="subhead" style={{ fontWeight: '800', color: palette.burgundy }}>
+                    Find for Me — 1 Search at a Time
+                  </Text>
+                </View>
+                <Text variant="footnote" tone="default" style={{ lineHeight: 18, marginBottom: spacing.xs }}>
+                  Every member is paired with 1 dedicated Match Advisor for 1 search at a time. Browse accredited advisors below to start your private search.
+                </Text>
+              </View>
+            )}
+
+            {/* Flat Fee Transparency Banner */}
+            <View style={[styles.pricingCard, { backgroundColor: palette.burgundy }]}>
+              <View style={styles.badgeRow}>
+                <View style={styles.pill}>
+                  <Text variant="label" style={styles.pillText}>STANDARD PRICING</Text>
+                </View>
+                <Text variant="callout" style={styles.pricingFigure}>£500 Flat Fee</Text>
+              </View>
+              <Text variant="heading" style={styles.pricingTitle}>£250 deposit upfront • £250 on success</Text>
+              <Text variant="footnote" style={styles.pricingBody}>
+                Select a verified Match Advisor to lead your search. Your profile stays 100% private. The remaining £250 balance is only paid once we find your spouse.
+              </Text>
+            </View>
+
+            <View style={{ marginTop: spacing.md, marginBottom: spacing.xs }}>
+              <Text variant="heading" tone="default">Verified Match Advisors</Text>
+              <Text variant="footnote" tone="muted">Tap an advisor to view their full credentials, bio, and ratings</Text>
+            </View>
+          </View>
+        }
+        renderItem={({ item }) => (
+          <PressableScale
+            onPress={() => setViewingAdvisor(item)}
+            style={[styles.advisorCard, { backgroundColor: c.surface, borderColor: c.border }, !isDark ? shadow.soft : null] as any}
+          >
+            <View style={styles.advisorTopRow}>
+              <View style={styles.avatarWrap}>
+                {item.profile_photo_url ? (
+                  <Image source={{ uri: item.profile_photo_url }} style={styles.avatarImg} />
+                ) : (
+                  <View style={[styles.avatarPlaceholder, { backgroundColor: palette.burgundy }]}>
+                    <Text variant="heading" style={{ color: palette.cream }}>
+                      {item.display_name.charAt(0).toUpperCase()}
                     </Text>
                   </View>
-                </View>
+                )}
               </View>
 
-              {item.bio && (
-                <Text variant="body" tone="default" numberOfLines={2} style={{ marginTop: spacing.sm, lineHeight: 20 }}>
-                  {item.bio}
-                </Text>
-              )}
-
-              {item.expertise_tags && (
-                <View style={styles.tagsRow}>
-                  {item.expertise_tags.split(',').slice(0, 3).map((tag) => (
-                    <View key={tag.trim()} style={[styles.tag, { backgroundColor: c.surfaceAlt }]}>
-                      <Text variant="label" tone="muted">{tag.trim()}</Text>
-                    </View>
-                  ))}
+              <View style={{ flex: 1, marginLeft: spacing.md }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text variant="subhead" tone="default" style={{ fontWeight: '700' }}>{item.display_name}</Text>
+                  <Ionicons name="checkmark-circle" size={16} color={c.success} />
                 </View>
-              )}
-
-              <View style={[styles.cardFoot, { borderTopColor: c.border }]}>
-                <View>
-                  <Text variant="label" tone="muted">FLAT FEE</Text>
-                  <Text variant="callout" tone="accent" style={{ fontWeight: '700' }}>£500 (£250 dep)</Text>
-                </View>
-
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <Button
-                    label="View Profile"
-                    variant="ghost"
-                    onPress={() => setViewingAdvisor(item)}
-                  />
-                  <Button
-                    label="Select"
-                    variant="primary"
-                    onPress={() => handleBookAdvisor(item)}
-                  />
+                <Text variant="footnote" tone="accent" style={{ marginTop: 2 }}>{item.headline || 'Verified Match Advisor'}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                    <Ionicons name="star" size={13} color={palette.gold} />
+                    <Text variant="label" style={{ fontWeight: '700' }}>{item.rating ? Number(item.rating).toFixed(1) : 'New'}</Text>
+                  </View>
+                  <Text variant="label" tone="muted">
+                    {item.years_experience || 5}y exp
+                  </Text>
                 </View>
               </View>
-            </PressableScale>
-          )}
+            </View>
+
+            {item.bio && (
+              <Text variant="body" tone="default" numberOfLines={2} style={{ marginTop: spacing.sm, lineHeight: 20 }}>
+                {item.bio}
+              </Text>
+            )}
+
+            {item.expertise_tags && (
+              <View style={styles.tagsRow}>
+                {item.expertise_tags.split(',').slice(0, 3).map((tag) => (
+                  <View key={tag.trim()} style={[styles.tag, { backgroundColor: c.surfaceAlt }]}>
+                    <Text variant="label" tone="muted">{tag.trim()}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <View style={[styles.cardFoot, { borderTopColor: c.border }]}>
+              <View>
+                <Text variant="label" tone="muted">FLAT FEE</Text>
+                <Text variant="callout" tone="accent" style={{ fontWeight: '700' }}>£500 (£250 dep)</Text>
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Button
+                  label="View Profile"
+                  variant="outline"
+                  size="sm"
+                  onPress={() => setViewingAdvisor(item)}
+                />
+                <Button
+                  label={hasActiveSearch ? 'In Progress' : 'Book Advisor'}
+                  variant={hasActiveSearch ? 'outline' : 'primary'}
+                  size="sm"
+                  onPress={() => handleBookAdvisor(item)}
+                />
+              </View>
+            </View>
+          </PressableScale>
+        )}
           ListEmptyComponent={
             <EmptyState
               icon="people"
@@ -987,11 +1090,11 @@ const styles = StyleSheet.create({
   },
   segmentBtn: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1.5,
   },
   caseCard: {
     padding: spacing.lg,

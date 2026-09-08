@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
     ...shadow.photo,
   },
   hero: { backgroundColor: palette.burgundyDark, justifyContent: 'flex-end' },
-  heroScrim: { ...StyleSheet.absoluteFillObject },
+  heroScrim: { ...(StyleSheet.absoluteFill as any) },
   placeholder: { backgroundColor: palette.burgundy, alignItems: 'center', justifyContent: 'center' },
   placeholderText: { fontFamily: fonts.display, fontSize: 96, color: palette.goldSoft },
   dotsTop: { position: 'absolute', top: 12, left: 16, right: 16, flexDirection: 'row', gap: 4 },

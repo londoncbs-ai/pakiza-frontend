@@ -373,7 +373,7 @@ export default function OfferChatScreen() {
               {isMatched ? (
                 <Button
                   label="Open Direct Chat"
-                  variant="outline"
+                  variant="primary"
                   onPress={() => navigateToDirectChat(name)}
                 />
               ) : !hasAgreed ? (

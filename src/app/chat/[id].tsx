@@ -856,7 +856,7 @@ const styles = StyleSheet.create({
 
   // List
   listContent: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  emptyOverlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  emptyOverlay: { ...(StyleSheet.absoluteFill as any), alignItems: 'center', justifyContent: 'center' },
   emptyWrap: { paddingHorizontal: spacing.xl, alignItems: 'center' },
   emptyBadge: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
   emptyBody: { marginTop: spacing.xs, lineHeight: 22 },

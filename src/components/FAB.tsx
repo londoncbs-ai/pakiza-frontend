@@ -14,7 +14,7 @@ interface FABProps {
 export function FAB({ icon, onPress, style }: FABProps) {
   return (
     <PressableScale
-      style={[styles.fab, shadow.medium, style]}
+      style={[styles.fab, shadow.card, style] as any}
       onPress={onPress}
     >
       <Ionicons name={icon} size={24} color="white" />

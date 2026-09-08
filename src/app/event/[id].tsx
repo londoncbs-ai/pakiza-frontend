@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   cancelBtn: { height: 44, paddingHorizontal: 16 },
   actingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...(StyleSheet.absoluteFill as any),
     alignItems: 'center',
     justifyContent: 'center',
   },

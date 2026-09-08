@@ -37,7 +37,7 @@ export function OptionGroup<T extends string | number>({
   // washes; on themed surfaces we use the scheme tokens. Selected is always the
   // brand burgundy fill with cream text.
   const chipBg = onDark ? hexA(palette.cream, 0.08) : c.surfaceAlt;
-  const chipBorder = onDark ? hexA(palette.cream, 0.22) : c.border;
+  const chipBorder = onDark ? hexA(palette.cream, 0.35) : c.borderStrong;
 
   const chips = options.map((opt) => {
     const active = value === opt.value;
@@ -51,6 +51,7 @@ export function OptionGroup<T extends string | number>({
           {
             backgroundColor: active ? palette.burgundy : chipBg,
             borderColor: active ? palette.burgundy : chipBorder,
+            borderWidth: active ? 1.5 : 1,
           },
         ]}
       >
@@ -92,7 +93,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: 9,
     borderRadius: radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },

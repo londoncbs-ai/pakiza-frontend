@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   },
   teaserCard: { width: '29%', aspectRatio: 0.8, borderRadius: radii.lg, overflow: 'hidden', backgroundColor: palette.burgundyDark },
   teaserVeil: {
-    ...StyleSheet.absoluteFillObject,
+    ...(StyleSheet.absoluteFill as any),
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: tint.overlaySoft,

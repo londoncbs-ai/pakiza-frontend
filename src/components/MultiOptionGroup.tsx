@@ -25,7 +25,7 @@ export function MultiOptionGroup({ label, options, value, onChange, onDark = fal
   };
 
   const chipBg = onDark ? hexA(palette.cream, 0.08) : c.surfaceAlt;
-  const chipBorder = onDark ? hexA(palette.cream, 0.22) : c.border;
+  const chipBorder = onDark ? hexA(palette.cream, 0.35) : c.borderStrong;
 
   return (
     <View style={styles.wrap}>
@@ -47,6 +47,7 @@ export function MultiOptionGroup({ label, options, value, onChange, onDark = fal
                 {
                   backgroundColor: active ? palette.burgundy : chipBg,
                   borderColor: active ? palette.burgundy : chipBorder,
+                  borderWidth: active ? 1.5 : 1,
                 },
               ]}
             >
@@ -73,7 +74,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: spacing.sm,
     borderRadius: radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },

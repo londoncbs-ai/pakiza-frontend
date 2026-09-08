@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   eventCardWrap: { width: 260 },
   eventCard: { borderRadius: radii.lg, overflow: 'hidden', padding: 0 },
   eventCover: { height: 140, width: '100%' },
-  coverFallback: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  coverFallback: { ...(StyleSheet.absoluteFill as any), alignItems: 'center', justifyContent: 'center' },
   eventBody: { padding: spacing.md, gap: spacing.xs },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   storyList: { paddingHorizontal: spacing.lg, gap: spacing.md },
