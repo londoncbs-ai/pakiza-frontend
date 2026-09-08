@@ -195,9 +195,26 @@ export default function Messages() {
                     </Text>
                     <PlanBadge plan={item.plan} />
                     {item.kind === 'advisor' ? (
-                      <View style={[styles.chip, { backgroundColor: 'rgba(128, 0, 32, 0.1)', borderColor: 'rgba(128, 0, 32, 0.25)', borderWidth: 1 }]}>
-                        <Ionicons name="shield-checkmark" size={11} color={palette.burgundy} />
-                        <Text variant="label" style={{ color: palette.burgundy, fontWeight: '700', fontSize: 10 }}>ADVISOR</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <View style={[styles.chip, { backgroundColor: 'rgba(128, 0, 32, 0.1)', borderColor: 'rgba(128, 0, 32, 0.25)', borderWidth: 1 }]}>
+                          <Ionicons name="shield-checkmark" size={11} color={palette.burgundy} />
+                          <Text variant="label" style={{ color: palette.burgundy, fontWeight: '700', fontSize: 10 }}>ADVISOR</Text>
+                        </View>
+                        {item.status === 'cancelled' && (
+                          <View style={[styles.chip, { backgroundColor: 'rgba(194, 65, 12, 0.12)', borderColor: 'rgba(194, 65, 12, 0.25)', borderWidth: 1 }]}>
+                            <Text variant="label" style={{ color: palette.sienna, fontWeight: '800', fontSize: 9 }}>CANCELLED</Text>
+                          </View>
+                        )}
+                        {item.status === 'completed' && (
+                          <View style={[styles.chip, { backgroundColor: 'rgba(217, 119, 6, 0.12)', borderColor: 'rgba(217, 119, 6, 0.25)', borderWidth: 1 }]}>
+                            <Text variant="label" style={{ color: palette.gold, fontWeight: '800', fontSize: 9 }}>CLOSED</Text>
+                          </View>
+                        )}
+                        {item.status === 'expired' && (
+                          <View style={[styles.chip, { backgroundColor: 'rgba(100, 116, 139, 0.12)', borderColor: 'rgba(100, 116, 139, 0.25)', borderWidth: 1 }]}>
+                            <Text variant="label" style={{ color: '#64748b', fontWeight: '800', fontSize: 9 }}>INACTIVE</Text>
+                          </View>
+                        )}
                       </View>
                     ) : kindLabel ? (
                       <View style={[styles.chip, { backgroundColor: c.accentFaint }]}>

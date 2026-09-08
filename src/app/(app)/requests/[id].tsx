@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View, Pressable } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, View, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { errorMessage } from '@/api/client';
-import { matchAdvisorsApi } from '@/api/matchAdvisors';
+import { getSearchDisplayTitle, getSearchStatusConfig, matchAdvisorsApi } from '@/api/matchAdvisors';
 import type { MatchAdvisorOffer, MatchAdvisorRequest } from '@/api/types';
 import { Button } from '@/components/Button';
 import { ErrorState } from '@/components/ErrorState';
 import { Screen } from '@/components/Screen';
 import { SkeletonList } from '@/components/Skeleton';
 import { Text } from '@/components/Text';
+import { TextField } from '@/components/TextField';
 import { palette, radii, shadow, spacing, useTheme } from '@/theme';
 
 export default function RequestDetailsScreen() {
@@ -25,6 +26,11 @@ export default function RequestDetailsScreen() {
   const [offers, setOffers] = useState<MatchAdvisorOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Rename search title state
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [renamingTitle, setRenamingTitle] = useState('');
+  const [savingTitle, setSavingTitle] = useState(false);
 
   const loadData = async () => {
     if (!params.id) return;
@@ -70,6 +76,28 @@ export default function RequestDetailsScreen() {
     );
   };
 
+  const handleOpenRename = () => {
+    if (!req) return;
+    setRenamingTitle(getSearchDisplayTitle(req));
+    setShowRenameModal(true);
+  };
+
+  const handleSaveTitle = async () => {
+    if (!params.id || !renamingTitle.trim()) return;
+    setSavingTitle(true);
+    try {
+      const updated = await matchAdvisorsApi.updateRequest(params.id, {
+        request_title: renamingTitle.trim(),
+      });
+      setReq(updated);
+      setShowRenameModal(false);
+    } catch (err) {
+      Alert.alert('Error', errorMessage(err, 'Could not update title'));
+    } finally {
+      setSavingTitle(false);
+    }
+  };
+
   if (loading) {
     return (
       <Screen>
@@ -89,6 +117,7 @@ export default function RequestDetailsScreen() {
   const isCancelled = req.status === 'cancelled';
   const isCompleted = req.status === 'completed';
   const assignedOffer = offers.find((o) => o.id === req.selected_offer_id) || offers[0] || null;
+  const statusCfg = getSearchStatusConfig(req.status);
 
   // Determine active step (1: Deposit Secured, 2: Advisor Consultation, 3: Sourcing Candidates, 4: Partner Found)
   let currentStep = 2;
@@ -112,9 +141,12 @@ export default function RequestDetailsScreen() {
             <Ionicons name="chevron-back" size={26} color={c.text} />
           </Pressable>
           <View style={styles.headerTitleWrap}>
-            <Text variant="heading" style={{ fontWeight: '800' }} numberOfLines={1}>
-              {req.request_title || 'Private Matchmaking Case'}
-            </Text>
+            <Pressable onPress={handleOpenRename} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text variant="heading" style={{ fontWeight: '800', flexShrink: 1 }} numberOfLines={1}>
+                {getSearchDisplayTitle(req)}
+              </Text>
+              <Ionicons name="pencil" size={15} color={c.accent} />
+            </Pressable>
             <Text variant="footnote" tone="muted">
               Case Ref: #{String(req.id).slice(0, 8).toUpperCase()}
             </Text>
@@ -122,44 +154,90 @@ export default function RequestDetailsScreen() {
           <View
             style={[
               styles.statusPill,
-              {
-                backgroundColor: isCancelled
-                  ? 'rgba(194, 65, 12, 0.12)'
-                  : isCompleted
-                  ? 'rgba(217, 119, 6, 0.12)'
-                  : 'rgba(34, 197, 94, 0.12)',
-              },
+              { backgroundColor: statusCfg.bg },
             ]}
           >
             <View
               style={[
                 styles.statusDot,
-                {
-                  backgroundColor: isCancelled
-                    ? palette.sienna
-                    : isCompleted
-                    ? palette.gold
-                    : c.success,
-                },
+                { backgroundColor: statusCfg.color },
               ]}
             />
             <Text
               variant="label"
               style={{
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: '800',
-                color: isCancelled
-                  ? palette.sienna
-                  : isCompleted
-                  ? palette.gold
-                  : c.success,
-                textTransform: 'uppercase',
+                color: statusCfg.color,
+                letterSpacing: 0.5,
               }}
             >
-              {req.status}
+              {statusCfg.short}
             </Text>
           </View>
         </View>
+
+        {/* Announcement Banner if not active */}
+        {isCancelled && (
+          <View
+            style={{
+              backgroundColor: 'rgba(194, 65, 12, 0.08)',
+              borderRadius: radii.md,
+              padding: spacing.md,
+              borderWidth: 1,
+              borderColor: 'rgba(194, 65, 12, 0.25)',
+              marginBottom: spacing.md,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <Ionicons name="alert-circle" size={18} color={palette.sienna} />
+              <Text variant="subhead" style={{ fontWeight: '700', color: palette.sienna }}>Search Cancelled</Text>
+            </View>
+            <Text variant="footnote" tone="muted">
+              This matchmaking case is no longer active. £250 deposit settled in accordance with platform terms.
+            </Text>
+          </View>
+        )}
+        {isCompleted && (
+          <View
+            style={{
+              backgroundColor: 'rgba(217, 119, 6, 0.08)',
+              borderRadius: radii.md,
+              padding: spacing.md,
+              borderWidth: 1,
+              borderColor: 'rgba(217, 119, 6, 0.25)',
+              marginBottom: spacing.md,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <Ionicons name="checkmark-done-circle" size={18} color={palette.gold} />
+              <Text variant="subhead" style={{ fontWeight: '700', color: palette.burgundy }}>Search Completed & Closed</Text>
+            </View>
+            <Text variant="footnote" tone="muted">
+              Alhamdulillah! Match confirmed and case successfully concluded.
+            </Text>
+          </View>
+        )}
+        {req.status === 'expired' && (
+          <View
+            style={{
+              backgroundColor: 'rgba(100, 116, 139, 0.08)',
+              borderRadius: radii.md,
+              padding: spacing.md,
+              borderWidth: 1,
+              borderColor: 'rgba(100, 116, 139, 0.25)',
+              marginBottom: spacing.md,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <Ionicons name="time" size={18} color="#64748b" />
+              <Text variant="subhead" style={{ fontWeight: '700', color: '#64748b' }}>Search Inactive</Text>
+            </View>
+            <Text variant="footnote" tone="muted">
+              The representation period for this search has concluded.
+            </Text>
+          </View>
+        )}
 
         {/* 4-Step Milestone Stepper */}
         <View
@@ -442,6 +520,69 @@ export default function RequestDetailsScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Rename Search Modal */}
+      <Modal
+        visible={showRenameModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowRenameModal(false)}
+      >
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: spacing.lg,
+          }}
+          onPress={() => setShowRenameModal(false)}
+        >
+          <Pressable
+            style={{
+              width: '100%',
+              maxWidth: 400,
+              backgroundColor: c.surface,
+              borderRadius: radii.card,
+              padding: spacing.xl,
+              borderWidth: 1,
+              borderColor: c.border,
+            }}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <Text variant="heading" style={{ fontWeight: '800', marginBottom: spacing.xs }}>
+              Rename Search Case
+            </Text>
+            <Text variant="footnote" tone="muted" style={{ marginBottom: spacing.lg }}>
+              Give this case a distinctive name to easily identify it in your cases.
+            </Text>
+
+            <TextField
+              label="Case Name"
+              value={renamingTitle}
+              onChangeText={setRenamingTitle}
+              placeholder="e.g. London • Sunni Professional"
+              autoFocus
+            />
+
+            <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg }}>
+              <Button
+                label="Cancel"
+                variant="outline"
+                style={{ flex: 1 }}
+                onPress={() => setShowRenameModal(false)}
+              />
+              <Button
+                label="Save Name"
+                variant="primary"
+                style={{ flex: 1 }}
+                loading={savingTitle}
+                onPress={handleSaveTitle}
+              />
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Screen>
   );
 }

@@ -29,7 +29,7 @@ export default function CreateAdvisorRequestScreen() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const [form, setForm] = useState({
-    request_title: 'Private Matchmaking Search',
+    request_title: '',
     summary: '',
     partner_preferences: '',
     deal_breakers: '',
@@ -65,9 +65,14 @@ export default function CreateAdvisorRequestScreen() {
 
     setSaving(true);
     try {
+      const generatedTitle =
+        form.request_title.trim() ||
+        (selectedAdvisorName ? `Search with ${selectedAdvisorName}` : 'Personal Search') +
+          (form.preferred_location.trim() ? ` • ${form.preferred_location.trim()}` : '');
+
       const created = await matchAdvisorsApi.createRequest({
         advisor_id: selectedAdvisorId,
-        request_title: form.request_title.trim() || 'Private Matchmaking Search',
+        request_title: generatedTitle,
         summary: form.summary.trim() || null,
         partner_preferences: form.partner_preferences.trim(),
         deal_breakers: form.deal_breakers.trim() || null,
@@ -185,6 +190,20 @@ export default function CreateAdvisorRequestScreen() {
         {/* Preferences Form */}
         <Surface elevated style={styles.panel}>
           <Text variant="heading" tone="burgundy" style={styles.sectionTitle}>Your Match Criteria</Text>
+
+          <TextField
+            label="Search name / Reference *"
+            value={form.request_title}
+            onChangeText={(v) => onChange('request_title', v)}
+            placeholder={
+              selectedAdvisorName
+                ? `e.g. Search with ${selectedAdvisorName}`
+                : 'e.g. London • Sunni Professional'
+            }
+          />
+          <Text variant="footnote" tone="muted" style={{ marginTop: -spacing.xs, marginBottom: spacing.md, fontSize: 11 }}>
+            Give your search a distinctive name to easily track it in your case list.
+          </Text>
 
           <TextField
             label="Partner preferences *"

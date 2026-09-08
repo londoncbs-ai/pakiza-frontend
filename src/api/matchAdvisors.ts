@@ -88,7 +88,60 @@ export const matchAdvisorsApi = {
   getReceivedOffers() {
     return api.get<MatchAdvisorOffer[]>('/match-advisors/offers/received').then((r) => r.data);
   },
-completeOffer(offerId: string, rating: number) {
+  completeOffer(offerId: string, rating: number) {
     return api.post<MatchAdvisorOffer>(`/match-advisors/offers/${offerId}/complete?rating=${rating}`).then((r) => r.data);
   },
+};
+
+export const getSearchStatusConfig = (status?: string) => {
+  switch (status?.toLowerCase()) {
+    case 'cancelled':
+      return {
+        label: 'CANCELLED SEARCH',
+        short: 'CANCELLED',
+        color: '#c2410c',
+        bg: 'rgba(194, 65, 12, 0.12)',
+        icon: 'close-circle' as const,
+      };
+    case 'completed':
+      return {
+        label: 'CLOSED • SUCCESSFUL',
+        short: 'CLOSED',
+        color: '#d97706',
+        bg: 'rgba(217, 119, 6, 0.12)',
+        icon: 'checkmark-circle' as const,
+      };
+    case 'expired':
+      return {
+        label: 'INACTIVE SEARCH',
+        short: 'INACTIVE',
+        color: '#64748b',
+        bg: 'rgba(100, 116, 139, 0.12)',
+        icon: 'time' as const,
+      };
+    default:
+      return {
+        label: 'ACTIVE PRIVATE SEARCH',
+        short: 'ACTIVE',
+        color: '#16a34a',
+        bg: 'rgba(34, 197, 94, 0.12)',
+        icon: 'radio-button-on' as const,
+      };
+  }
+};
+
+export const getSearchDisplayTitle = (req: MatchAdvisorRequest) => {
+  if (
+    req.request_title &&
+    !['private matchmaking search', 'private search'].includes(req.request_title.trim().toLowerCase())
+  ) {
+    return req.request_title;
+  }
+  if (req.advisor_name) {
+    return `Search with ${req.advisor_name}${req.preferred_location ? ` • ${req.preferred_location}` : ''}`;
+  }
+  if (req.preferred_location) {
+    return `Search • ${req.preferred_location}`;
+  }
+  return 'Personal Matchmaking Case';
 };

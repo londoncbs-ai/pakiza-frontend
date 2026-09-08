@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 import { errorMessage } from '@/api/client';
-import { matchAdvisorsApi } from '@/api/matchAdvisors';
+import { getSearchDisplayTitle, getSearchStatusConfig, matchAdvisorsApi } from '@/api/matchAdvisors';
 import type { MatchAdvisorProfile, MatchAdvisorRequest } from '@/api/types';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
@@ -94,8 +94,15 @@ export default function MatchAdvisorsDirectoryScreen() {
             ]}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              {activeReq && activeReq.status !== 'cancelled' && (
-                <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.success }} />
+              {activeReq && (
+                <View
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: 4,
+                    backgroundColor: getSearchStatusConfig(activeReq.status).color,
+                  }}
+                />
               )}
               <Text
                 variant="subhead"
@@ -104,7 +111,9 @@ export default function MatchAdvisorsDirectoryScreen() {
                   color: activeTab === 'case' ? palette.cream : c.text,
                 }}
               >
-                My Active Case
+                {activeReq && (activeReq.status === 'cancelled' || activeReq.status === 'completed' || activeReq.status === 'expired')
+                  ? 'My Case'
+                  : 'My Active Search'}
               </Text>
             </View>
           </Pressable>
@@ -150,117 +159,208 @@ export default function MatchAdvisorsDirectoryScreen() {
               !isDark ? shadow.card : undefined,
             ]}
           >
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <View
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: activeReq.status === 'cancelled' ? palette.sienna : c.success,
-                  }}
-                />
-                <Text
-                  variant="label"
-                  style={{
-                    fontWeight: '800',
-                    color: activeReq.status === 'cancelled' ? palette.sienna : c.success,
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  {activeReq.status === 'cancelled' ? 'CANCELLED SEARCH' : 'ACTIVE PRIVATE SEARCH'}
-                </Text>
-              </View>
-              <Text variant="footnote" tone="muted">
-                #{String(activeReq.id).slice(0, 8).toUpperCase()}
-              </Text>
-            </View>
+            {(() => {
+              const statusCfg = getSearchStatusConfig(activeReq.status);
+              const isClosedOrCancelled =
+                activeReq.status === 'cancelled' ||
+                activeReq.status === 'completed' ||
+                activeReq.status === 'expired';
+              return (
+                <>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs }}>
+                    <View
+                      style={{
+                        paddingHorizontal: 8,
+                        paddingVertical: 3,
+                        borderRadius: radii.pill,
+                        backgroundColor: statusCfg.bg,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 5,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 7,
+                          height: 7,
+                          borderRadius: 4,
+                          backgroundColor: statusCfg.color,
+                        }}
+                      />
+                      <Text
+                        variant="label"
+                        style={{
+                          fontWeight: '800',
+                          color: statusCfg.color,
+                          letterSpacing: 0.5,
+                          fontSize: 10,
+                        }}
+                      >
+                        {statusCfg.label}
+                      </Text>
+                    </View>
+                    <Text variant="footnote" tone="muted">
+                      #{String(activeReq.id).slice(0, 8).toUpperCase()}
+                    </Text>
+                  </View>
 
-            <Text variant="heading" style={{ fontWeight: '800', marginTop: 4, marginBottom: 2 }}>
-              {activeReq.request_title || 'Private Matchmaking Search'}
-            </Text>
-            <Text variant="footnote" tone="muted" style={{ marginBottom: spacing.md }}>
-              Confidential search handled by dedicated Match Advisor
-            </Text>
-
-            {/* Advisor Strip */}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                padding: spacing.sm,
-                backgroundColor: c.surfaceAlt,
-                borderRadius: radii.md,
-                marginBottom: spacing.md,
-                borderWidth: 1,
-                borderColor: c.border,
-              }}
-            >
-              {activeReq.advisor_photo_url ? (
-                <Image
-                  source={{ uri: activeReq.advisor_photo_url }}
-                  style={{ width: 50, height: 50, borderRadius: 25, marginRight: spacing.sm }}
-                  contentFit="cover"
-                />
-              ) : (
-                <View
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 25,
-                    backgroundColor: palette.burgundy,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: spacing.sm,
-                  }}
-                >
-                  <Ionicons name="shield-checkmark" size={24} color={palette.cream} />
-                </View>
-              )}
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Text variant="subhead" style={{ fontWeight: '700' }}>
-                    {activeReq.advisor_name || 'Assigned Match Advisor'}
+                  <Text variant="heading" style={{ fontWeight: '800', marginTop: 4, marginBottom: 2 }}>
+                    {getSearchDisplayTitle(activeReq)}
                   </Text>
-                  <Ionicons name="checkmark-circle" size={16} color={c.success} />
-                </View>
-                <Text variant="footnote" tone="accent" style={{ marginTop: 2 }}>
-                  Private Matchmaker • £250 Deposit Secured
-                </Text>
-              </View>
-            </View>
+                  <Text variant="footnote" tone="muted" style={{ marginBottom: spacing.md }}>
+                    Confidential search handled by dedicated Match Advisor
+                  </Text>
 
-            {/* Action Buttons */}
-            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-              {activeReq.selected_offer_id ? (
-                <Button
-                  label="Message Advisor"
-                  variant="primary"
-                  style={{ flex: 1 }}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/advisor-chat/[offerId]',
-                      params: {
-                        offerId: String(activeReq.selected_offer_id),
-                        name: activeReq.advisor_name || '',
-                        photo: activeReq.advisor_photo_url || '',
-                      },
-                    } as any)
-                  }
-                />
-              ) : null}
-              <Button
-                label="Case Details"
-                variant="outline"
-                style={{ flex: 1 }}
-                onPress={() =>
-                  router.push({
-                    pathname: '/(app)/requests/[id]',
-                    params: { id: activeReq.id },
-                  } as any)
-                }
-              />
-            </View>
+                  {/* Status Announcement Banner if not active */}
+                  {activeReq.status === 'cancelled' && (
+                    <View
+                      style={{
+                        backgroundColor: 'rgba(194, 65, 12, 0.08)',
+                        borderRadius: radii.md,
+                        padding: spacing.sm,
+                        borderWidth: 1,
+                        borderColor: 'rgba(194, 65, 12, 0.25)',
+                        marginBottom: spacing.md,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: spacing.xs,
+                      }}
+                    >
+                      <Ionicons name="alert-circle" size={18} color={palette.sienna} />
+                      <Text variant="footnote" style={{ color: palette.sienna, flex: 1, fontWeight: '600' }}>
+                        This search was cancelled. Deposit settled according to platform terms.
+                      </Text>
+                    </View>
+                  )}
+                  {activeReq.status === 'completed' && (
+                    <View
+                      style={{
+                        backgroundColor: 'rgba(217, 119, 6, 0.08)',
+                        borderRadius: radii.md,
+                        padding: spacing.sm,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 119, 6, 0.25)',
+                        marginBottom: spacing.md,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: spacing.xs,
+                      }}
+                    >
+                      <Ionicons name="checkmark-circle" size={18} color={palette.gold} />
+                      <Text variant="footnote" style={{ color: palette.gold, flex: 1, fontWeight: '600' }}>
+                        Spouse found! Case successfully concluded.
+                      </Text>
+                    </View>
+                  )}
+                  {activeReq.status === 'expired' && (
+                    <View
+                      style={{
+                        backgroundColor: 'rgba(100, 116, 139, 0.08)',
+                        borderRadius: radii.md,
+                        padding: spacing.sm,
+                        borderWidth: 1,
+                        borderColor: 'rgba(100, 116, 139, 0.25)',
+                        marginBottom: spacing.md,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: spacing.xs,
+                      }}
+                    >
+                      <Ionicons name="time" size={18} color="#64748b" />
+                      <Text variant="footnote" style={{ color: '#64748b', flex: 1, fontWeight: '600' }}>
+                        This search period has concluded and is currently inactive.
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Advisor Strip */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      padding: spacing.sm,
+                      backgroundColor: c.surfaceAlt,
+                      borderRadius: radii.md,
+                      marginBottom: spacing.md,
+                      borderWidth: 1,
+                      borderColor: c.border,
+                    }}
+                  >
+                    {activeReq.advisor_photo_url ? (
+                      <Image
+                        source={{ uri: activeReq.advisor_photo_url }}
+                        style={{ width: 50, height: 50, borderRadius: 25, marginRight: spacing.sm }}
+                        contentFit="cover"
+                      />
+                    ) : (
+                      <View
+                        style={{
+                          width: 50,
+                          height: 50,
+                          borderRadius: 25,
+                          backgroundColor: palette.burgundy,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginRight: spacing.sm,
+                        }}
+                      >
+                        <Ionicons name="shield-checkmark" size={24} color={palette.cream} />
+                      </View>
+                    )}
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Text variant="subhead" style={{ fontWeight: '700' }}>
+                          {activeReq.advisor_name || 'Assigned Match Advisor'}
+                        </Text>
+                        <Ionicons name="checkmark-circle" size={16} color={c.success} />
+                      </View>
+                      <Text variant="footnote" tone="accent" style={{ marginTop: 2 }}>
+                        {isClosedOrCancelled ? 'Private Matchmaker' : 'Private Matchmaker • £250 Deposit Secured'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Action Buttons */}
+                  <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                    {isClosedOrCancelled ? (
+                      <Button
+                        label="Book New Search"
+                        variant="primary"
+                        style={{ flex: 1 }}
+                        onPress={() => setActiveTab('browse')}
+                      />
+                    ) : activeReq.selected_offer_id ? (
+                      <Button
+                        label="Message Advisor"
+                        variant="primary"
+                        style={{ flex: 1 }}
+                        onPress={() =>
+                          router.push({
+                            pathname: '/advisor-chat/[offerId]',
+                            params: {
+                              offerId: String(activeReq.selected_offer_id),
+                              name: activeReq.advisor_name || '',
+                              photo: activeReq.advisor_photo_url || '',
+                            },
+                          } as any)
+                        }
+                      />
+                    ) : null}
+                    <Button
+                      label="Case Details"
+                      variant="outline"
+                      style={{ flex: 1 }}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/(app)/requests/[id]',
+                          params: { id: activeReq.id },
+                        } as any)
+                      }
+                    />
+                  </View>
+                </>
+              );
+            })()}
           </View>
 
           {/* Stepper Card */}
@@ -341,26 +441,53 @@ export default function MatchAdvisorsDirectoryScreen() {
               </Text>
               {myRequests
                 .filter((r) => r.id !== activeReq.id)
-                .map((req) => (
-                  <PressableScale
-                    key={req.id}
-                    onPress={() => router.push({ pathname: '/(app)/requests/[id]', params: { id: req.id } } as any)}
-                    style={[styles.activeCard, { backgroundColor: c.surface, borderColor: c.border, marginBottom: 8 }, !isDark && shadow.soft] as any}
-                  >
-                    <View style={{ flex: 1, marginRight: spacing.md }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                        <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: req.status === 'cancelled' ? palette.sienna : c.success }} />
-                        <Text variant="label" tone="accent" style={{ textTransform: 'uppercase', fontWeight: '700', fontSize: 10 }}>
-                          {req.status}
+                .map((req) => {
+                  const itemBadge = getSearchStatusConfig(req.status);
+                  return (
+                    <PressableScale
+                      key={req.id}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/(app)/requests/[id]',
+                          params: { id: req.id },
+                        } as any)
+                      }
+                      style={[
+                        styles.activeCard,
+                        { backgroundColor: c.surface, borderColor: c.border, marginBottom: 8 },
+                        !isDark && shadow.soft,
+                      ] as any}
+                    >
+                      <View style={{ flex: 1, marginRight: spacing.md }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                          <View
+                            style={{
+                              paddingHorizontal: 7,
+                              paddingVertical: 2,
+                              borderRadius: radii.pill,
+                              backgroundColor: itemBadge.bg,
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                          >
+                            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: itemBadge.color }} />
+                            <Text style={{ fontSize: 10, fontWeight: '800', color: itemBadge.color }}>
+                              {itemBadge.short}
+                            </Text>
+                          </View>
+                          <Text variant="footnote" tone="muted" style={{ fontSize: 11 }}>
+                            #{String(req.id).slice(0, 8).toUpperCase()}
+                          </Text>
+                        </View>
+                        <Text variant="subhead" tone="default" numberOfLines={1} style={{ fontWeight: '700' }}>
+                          {getSearchDisplayTitle(req)}
                         </Text>
                       </View>
-                      <Text variant="subhead" tone="default" numberOfLines={1}>
-                        {req.request_title || 'Private Search'}
-                      </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={18} color={c.textMuted} />
-                  </PressableScale>
-                ))}
+                      <Ionicons name="chevron-forward" size={18} color={c.textMuted} />
+                    </PressableScale>
+                  );
+                })}
             </View>
           )}
 

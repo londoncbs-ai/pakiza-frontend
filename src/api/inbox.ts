@@ -17,6 +17,8 @@ export interface InboxItem {
   route: string;
   /** The value for the [id] param; null for support. */
   param_id: string | null;
+  /** Status for advisor / meeting requests: 'open' | 'active' | 'cancelled' | 'completed' | 'expired'. */
+  status?: string | null;
 }
 
 export const inboxApi = {
