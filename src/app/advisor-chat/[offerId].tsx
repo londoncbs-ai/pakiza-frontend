@@ -1,13 +1,15 @@
 import { useCallback, useState, useRef } from 'react';
-import { Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter, Stack } from 'expo-router';
 
 import { errorMessage } from '@/api/client';
+import { profilesApi } from '@/api/profiles';
+import { ProfileDetail } from '@/components/ProfileDetail';
 import { matchAdvisorsApi } from '@/api/matchAdvisors';
-import type { MatchAdvisorOffer, MatchAdvisorOfferMessage } from '@/api/types';
+import type { MatchAdvisorOffer, MatchAdvisorOfferMessage, PublicProfile } from '@/api/types';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { PressableScale } from '@/components/PressableScale';
@@ -56,6 +58,8 @@ export default function OfferChatScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const [inputText, setInputText] = useState('');
+  const [selectedProfile, setSelectedProfile] = useState<PublicProfile | null>(null);
+
   const [sending, setSending] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
@@ -166,6 +170,55 @@ export default function OfferChatScreen() {
 
   const renderMessage = ({ item }: { item: MatchAdvisorOfferMessage }) => {
     const isMe = item.sender_id === userId || item.sender_role === 'user';
+    if (item.type === ('SYSTEM' as any) && item.content?.startsWith('PROFILE_RECOMMENDATION|')) {
+      const parts = item.content.split('|');
+      const profileId = parts[1];
+      const name = parts[2] || 'Recommended Match';
+
+      return (
+        <View style={{ marginVertical: spacing.sm, alignItems: 'center' }}>
+          <PressableScale
+            onPress={async () => {
+              try {
+                const p = await profilesApi.getById(profileId);
+                setSelectedProfile(p);
+              } catch (err) {
+                Alert.alert('Error', 'Could not load profile details');
+              }
+            }}
+            style={[{
+              backgroundColor: c.surface,
+              padding: spacing.md,
+              borderRadius: radii.card,
+              borderWidth: 1,
+              borderColor: c.border,
+              alignItems: 'center',
+              width: '80%',
+            }, !isDark ? shadow.card : {}]}
+          >
+            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.sm }}>
+              <Ionicons name="heart" size={24} color={palette.burgundy} />
+            </View>
+            <Text variant="subhead" style={{ fontWeight: '700', textAlign: 'center' }}>{name}</Text>
+            <Text variant="footnote" tone="muted" style={{ marginTop: 4, textAlign: 'center' }}>Tap to view full profile</Text>
+            <Button
+              label="View Profile"
+              variant="outline"
+              style={{ marginTop: spacing.md, width: '100%' }}
+              onPress={async () => {
+                try {
+                  const p = await profilesApi.getById(profileId);
+                  setSelectedProfile(p);
+                } catch (err) {
+                  Alert.alert('Error', 'Could not load profile details');
+                }
+              }}
+            />
+          </PressableScale>
+        </View>
+      );
+    }
+
 
     if (item.type === 'PROPOSAL' || item.type === ('SYSTEM' as any)) {
       const isSearchActive =
@@ -177,7 +230,7 @@ export default function OfferChatScreen() {
             style={[
               styles.proposalCard,
               { backgroundColor: c.surface, borderColor: c.border },
-              !isDark && shadow.card,
+              !isDark ? shadow.card : {},
             ]}
           >
             {/* Agreement Header */}
@@ -449,6 +502,16 @@ export default function OfferChatScreen() {
           />
         </PressableScale>
       </View>
+    
+      <Modal visible={!!selectedProfile} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setSelectedProfile(null)}>
+        {selectedProfile && (
+          <ProfileDetail
+            profile={selectedProfile}
+            onClose={() => setSelectedProfile(null)}
+          />
+        )}
+      </Modal>
+
     </KeyboardAvoidingView>
     </>
   );

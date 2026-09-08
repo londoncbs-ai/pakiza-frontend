@@ -9,6 +9,9 @@ import type {
 } from './types';
 
 export const profilesApi = {
+  getById(userId: string) {
+    return api.get<PublicProfile>(`/profiles/${userId}`).then((r) => r.data);
+  },
   /** Own profile. Returns null on 404 (no profile created yet). */
   async getMine(): Promise<MyProfile | null> {
     try {
