@@ -18,9 +18,10 @@ export type StripeCheckoutSession = {
 
 /** Error thrown when the member closes the sheet without paying. */
 export class PaymentCancelledError extends Error {
-  constructor() {
-    super('Payment cancelled');
+  constructor(message = 'Payment cancelled') {
+    super(message);
     this.name = 'PaymentCancelledError';
+    Object.setPrototypeOf(this, PaymentCancelledError.prototype);
   }
 }
 
@@ -36,13 +37,44 @@ export async function presentStripePayment(
     throw new Error('Payment session is incomplete');
   }
 
-  const stripe = require('@stripe/stripe-react-native');
+  let stripe: any;
+  try {
+    stripe = require('@stripe/stripe-react-native');
+  } catch {
+    throw new Error(
+      'Stripe native module is not available in this build. Please run the app using a development build (expo run:ios or EAS build) to process card payments.'
+    );
+  }
 
-  await stripe.initStripe({ publishableKey: session.publishable_key });
+  await stripe.initStripe({
+    publishableKey: session.publishable_key,
+    merchantIdentifier: 'merchant.app.pakiza.mobile',
+    urlScheme: 'pakiza',
+  });
 
   const init = await stripe.initPaymentSheet({
     paymentIntentClientSecret: session.client_secret,
     merchantDisplayName: 'Pakiza',
+    applePay: {
+      merchantCountryCode: 'GB',
+    },
+    defaultBillingDetails: {
+      address: {
+        country: 'GB',
+      },
+    },
+    returnURL: 'pakiza://stripe-redirect',
+    appearance: {
+      colors: {
+        primary: '#800020',
+      },
+      primaryButton: {
+        colors: {
+          background: '#800020',
+          text: '#FFFFFF',
+        },
+      },
+    },
   });
   if (init.error) throw new Error(init.error.message);
 

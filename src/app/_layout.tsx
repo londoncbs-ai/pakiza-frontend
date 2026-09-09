@@ -137,17 +137,45 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <AuthProvider>
-            <ThemedStatusBar />
-            <RealtimeProvider>
-              <RootNavigator />
-            </RealtimeProvider>
-            <ScreenshotGuard />
-          </AuthProvider>
+          <SafeStripeProvider>
+            <AuthProvider>
+              <ThemedStatusBar />
+              <RealtimeProvider>
+                <RootNavigator />
+              </RealtimeProvider>
+              <ScreenshotGuard />
+            </AuthProvider>
+          </SafeStripeProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
+}
+
+function SafeStripeProvider({ children }: { children: React.ReactNode }) {
+  const publishableKey =
+    process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
+    'pk_live_51TqwyqRzKlDbHKvVQzo4NCEVeuiq2UrN1Uf7CMPi5YFmTD0sLpFBoyOUjLCgTmfBtiTQp1Byg77E9SQsOYv0oBFG00slLMKXSE';
+
+  let StripeProviderComp: any = null;
+  try {
+    StripeProviderComp = require('@stripe/stripe-react-native').StripeProvider;
+  } catch {
+    StripeProviderComp = null;
+  }
+
+  if (StripeProviderComp && publishableKey) {
+    return (
+      <StripeProviderComp
+        publishableKey={publishableKey}
+        merchantIdentifier="merchant.app.pakiza.mobile"
+        urlScheme="pakiza"
+      >
+        {children}
+      </StripeProviderComp>
+    );
+  }
+  return <>{children}</>;
 }
 
 function ThemedStatusBar() {
